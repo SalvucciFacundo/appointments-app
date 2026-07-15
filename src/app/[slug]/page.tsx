@@ -50,19 +50,19 @@ export default async function StorePage({ params }: PageParams) {
           </p>
         )}
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-          {store.latitude && store.longitude ? (
-            <a
-              href={`https://www.google.com/maps?q=${store.latitude},${store.longitude}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
-            >
-              <span>📍</span>
-              <span>{store.address}</span>
-            </a>
-          ) : (
+          <a
+            href={
+              store.latitude && store.longitude
+                ? `https://www.google.com/maps?q=${store.latitude},${store.longitude}`
+                : `https://www.google.com/maps/search/${encodeURIComponent(store.address)}`
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+          >
+            <span>📍</span>
             <span>{store.address}</span>
-          )}
+          </a>
           {store.phone && <span>{store.phone}</span>}
           <span className="font-medium text-gray-900 dark:text-gray-100">
             {store.specialty}
