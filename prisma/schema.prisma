@@ -54,6 +54,7 @@ model Store {
   blockedDates        BlockedDate[]
   appointments        Appointment[]
   reviews             Review[]
+  suspended           Boolean         @default(false)
   calendarSync        CalendarSync?
   favoritedBy         User[]          @relation("UserFavorites")
 }

@@ -27,6 +27,31 @@ import {
 
 const DAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
+function sumTotal(total: Record<string, number>): number {
+  return Object.values(total).reduce((s, v) => s + v, 0)
+}
+
+function formatPeakHour(hour: number | null): string {
+  if (hour === null) return "—"
+  return `${hour}:00`
+}
+
+function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center dark:border-gray-600 dark:bg-gray-800">
+      <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+        {value}
+      </p>
+      {sub && (
+        <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{sub}</p>
+      )}
+    </div>
+  )
+}
+
 function Skeleton() {
   return (
     <div className="space-y-4 animate-pulse">
@@ -69,6 +94,16 @@ export default function DashboardPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentData | null>(null)
   const [appointmentRefreshKey, setAppointmentRefreshKey] = useState(0)
 
+  // Analytics
+  const [stats, setStats] = useState<{
+    total: Record<string, number>
+    attendanceRate: number
+    peakHour: number | null
+    peakHourCount: number
+    repeatCustomers: number
+    todayCount: number
+  } | null>(null)
+
   // Calendar sync
   const [calendarEnabled, setCalendarEnabled] = useState(false)
   const [calendarLoading, setCalendarLoading] = useState(false)
@@ -79,6 +114,18 @@ export default function DashboardPage() {
       setCalendarEnabled(enabled)
     } catch {
       // Calendar not configured — stay disabled
+    }
+  }, [])
+
+  const loadStats = useCallback(async (storeId: string) => {
+    try {
+      const res = await fetch(`/api/stores/${storeId}/stats`)
+      if (res.ok) {
+        const data = await res.json()
+        setStats(data)
+      }
+    } catch {
+      // Stats not critical — silently fail
     }
   }, [])
 
@@ -115,6 +162,7 @@ export default function DashboardPage() {
         }
 
         loadCalendarStatus(data.id)
+        loadStats(data.id)
       }
     } catch (err) {
       const apiErr = err as ApiError
@@ -308,6 +356,25 @@ export default function DashboardPage() {
         >
           {message.text}
         </div>
+      )}
+
+      {/* Analytics */}
+      {stats && (
+        <Card title="Appointment Analytics">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            <StatCard label="Today" value={stats.todayCount} />
+            <StatCard label="Total" value={sumTotal(stats.total)} />
+            <StatCard label="Completed" value={stats.total["COMPLETED"] ?? 0} />
+            <StatCard label="Cancelled" value={stats.total["CANCELLED"] ?? 0} />
+            <StatCard label="Attendance" value={`${stats.attendanceRate}%`} />
+            <StatCard label="Peak Hour" value={formatPeakHour(stats.peakHour)} sub={stats.peakHourCount > 0 ? `${stats.peakHourCount} appts` : undefined} />
+          </div>
+          {stats.repeatCustomers > 0 && (
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+              {stats.repeatCustomers} repeat customer{stats.repeatCustomers !== 1 ? "s" : ""}
+            </p>
+          )}
+        </Card>
       )}
 
       {/* Store Info */}

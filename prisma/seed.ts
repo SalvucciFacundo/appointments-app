@@ -130,7 +130,7 @@ async function main() {
   }
   console.log(`  Business hours: ${businessHourCount}`);
 
-  // === 4. Sample Appointments (3 per store, next 7 days, idempotent) ===
+  // === 4. Sample Appointments (varied statuses, repeat customers, peak-hour data, idempotent) ===
 
   const now = new Date();
 
@@ -143,6 +143,16 @@ async function main() {
       clientEmail: "juan@example.com",
       service: "Corte de pelo",
       dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 10, 0),
+      status: AppointmentStatus.COMPLETED,
+    },
+    // Juan repeats → repeat customer
+    {
+      storeId: store1.id,
+      clientName: "Juan Pérez",
+      clientPhone: "+5491112345678",
+      clientEmail: "juan@example.com",
+      service: "Afeitado",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 10, 0),
       status: AppointmentStatus.CONFIRMED,
     },
     {
@@ -152,6 +162,16 @@ async function main() {
       clientEmail: "ana@example.com",
       service: "Tintura",
       dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 14, 0),
+      status: AppointmentStatus.COMPLETED,
+    },
+    // Ana repeats
+    {
+      storeId: store1.id,
+      clientName: "Ana García",
+      clientPhone: "+5491123456789",
+      clientEmail: "ana@example.com",
+      service: "Corte de pelo",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 8, 14, 0),
       status: AppointmentStatus.CONFIRMED,
     },
     {
@@ -163,6 +183,46 @@ async function main() {
       dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 4, 11, 30),
       status: AppointmentStatus.PENDING,
     },
+    // Peak hour 10:00 — same hour as Juan
+    {
+      storeId: store1.id,
+      clientName: "Lucía Romero",
+      clientPhone: "+5491178901234",
+      clientEmail: "lucia@example.com",
+      service: "Peinado",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 10, 0),
+      status: AppointmentStatus.COMPLETED,
+    },
+    // Another at 10:00 for peak
+    {
+      storeId: store1.id,
+      clientName: "Martín Suárez",
+      clientPhone: "+5491189012345",
+      clientEmail: "martin@example.com",
+      service: "Corte infantil",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 5, 10, 0),
+      status: AppointmentStatus.COMPLETED,
+    },
+    // Cancelled for attendance rate
+    {
+      storeId: store1.id,
+      clientName: "Valeria Gómez",
+      clientPhone: "+5491190123456",
+      clientEmail: "valeria@example.com",
+      service: "Manicura",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 6, 16, 0),
+      status: AppointmentStatus.CANCELLED,
+    },
+    // Today's appointment (relative to seed run date)
+    {
+      storeId: store1.id,
+      clientName: "Diego Morales",
+      clientPhone: "+5491101234567",
+      clientEmail: "diego@example.com",
+      service: "Corte de barba",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0),
+      status: AppointmentStatus.CONFIRMED,
+    },
     // Store 2 — Veterinaria Norte
     {
       storeId: store2.id,
@@ -171,6 +231,16 @@ async function main() {
       clientEmail: "laura@example.com",
       service: "Consulta general",
       dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0),
+      status: AppointmentStatus.COMPLETED,
+    },
+    // Laura repeats
+    {
+      storeId: store2.id,
+      clientName: "Laura Fernández",
+      clientPhone: "+5491145678901",
+      clientEmail: "laura@example.com",
+      service: "Control post-operatorio",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 10, 9, 0),
       status: AppointmentStatus.CONFIRMED,
     },
     {
@@ -180,7 +250,7 @@ async function main() {
       clientEmail: "roberto@example.com",
       service: "Vacunación",
       dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 15, 0),
-      status: AppointmentStatus.CONFIRMED,
+      status: AppointmentStatus.COMPLETED,
     },
     {
       storeId: store2.id,
@@ -190,6 +260,46 @@ async function main() {
       service: "Peluquería canina",
       dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 5, 10, 0),
       status: AppointmentStatus.PENDING,
+    },
+    // Peak hour 15:00 for Store 2
+    {
+      storeId: store2.id,
+      clientName: "Carlos Méndez",
+      clientPhone: "+5491111112222",
+      clientEmail: "carlos@example.com",
+      service: "Desparasitación",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 4, 15, 0),
+      status: AppointmentStatus.COMPLETED,
+    },
+    // Another at 15:00 for peak
+    {
+      storeId: store2.id,
+      clientName: "Florencia Ríos",
+      clientPhone: "+5491122223333",
+      clientEmail: "florencia@example.com",
+      service: "Castración",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 6, 15, 0),
+      status: AppointmentStatus.COMPLETED,
+    },
+    // Cancelled for attendance rate
+    {
+      storeId: store2.id,
+      clientName: "Gustavo Paredes",
+      clientPhone: "+5491133334444",
+      clientEmail: "gustavo@example.com",
+      service: "Revisión anual",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 11, 0),
+      status: AppointmentStatus.CANCELLED,
+    },
+    // Today's appointment (relative to seed run date)
+    {
+      storeId: store2.id,
+      clientName: "Natalia Vega",
+      clientPhone: "+5491144445555",
+      clientEmail: "natalia@example.com",
+      service: "Emergencia",
+      dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 0),
+      status: AppointmentStatus.CONFIRMED,
     },
   ];
 
