@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useToast } from "@/components/ui/Toast"
 import Card from "@/components/ui/Card"
+import Pagination from "@/components/ui/Pagination"
 
 interface AdminStats {
   totalStores: number
@@ -58,11 +59,22 @@ function StarRating({ rating }: { rating: number }) {
   )
 }
 
+interface PaginatedData<T> {
+  data: T[]
+  page: number
+  totalPages: number
+  total: number
+}
+
 export default function AdminPage() {
   const { addToast } = useToast()
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [stores, setStores] = useState<AdminStore[]>([])
+  const [storesPage, setStoresPage] = useState(1)
+  const [storesTotalPages, setStoresTotalPages] = useState(1)
   const [reviews, setReviews] = useState<AdminReview[]>([])
+  const [reviewsPage, setReviewsPage] = useState(1)
+  const [reviewsTotalPages, setReviewsTotalPages] = useState(1)
   const [integrations, setIntegrations] = useState<IntegrationStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -73,27 +85,18 @@ export default function AdminPage() {
     setError(null)
 
     try {
-      const [statsRes, storesRes, reviewsRes] = await Promise.all([
-        fetch("/api/admin/stats"),
-        fetch("/api/admin/stores"),
-        fetch("/api/admin/reviews"),
-      ])
-
-      if (!statsRes.ok || !storesRes.ok || !reviewsRes.ok) {
-        setError("Failed to load admin data")
-        return
-      }
-
       const [statsData, storesData, reviewsData, integrationsData] = await Promise.all([
         fetch("/api/admin/stats").then((r) => r.json()),
-        fetch("/api/admin/stores").then((r) => r.json()),
-        fetch("/api/admin/reviews").then((r) => r.json()),
+        fetch(`/api/admin/stores?page=${storesPage}&limit=10`).then((r) => r.json()),
+        fetch(`/api/admin/reviews?page=${reviewsPage}&limit=10`).then((r) => r.json()),
         fetch("/api/admin/integrations").then((r) => r.json()),
       ])
 
       setStats(statsData)
-      setStores(storesData)
-      setReviews(reviewsData)
+      setStores(storesData.data ?? storesData)
+      setStoresTotalPages(storesData.totalPages ?? 1)
+      setReviews(reviewsData.data ?? reviewsData)
+      setReviewsTotalPages(reviewsData.totalPages ?? 1)
       setIntegrations(integrationsData)
     } catch {
       setError("Failed to load admin data")
@@ -319,6 +322,13 @@ export default function AdminPage() {
             </table>
           </div>
         )}
+        {storesTotalPages > 1 && (
+          <Pagination
+            page={storesPage}
+            totalPages={storesTotalPages}
+            onPageChange={(p) => { setStoresPage(p); loadData() }}
+          />
+        )}
       </Card>
 
       {/* Reviews Table */}
@@ -365,6 +375,13 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {reviewsTotalPages > 1 && (
+          <Pagination
+            page={reviewsPage}
+            totalPages={reviewsTotalPages}
+            onPageChange={(p) => { setReviewsPage(p); loadData() }}
+          />
         )}
       </Card>
     </div>

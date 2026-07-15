@@ -3,16 +3,20 @@ import prisma from "@/lib/prisma"
 import StoreCard from "@/components/ui/StoreCard"
 import SearchBar from "@/components/ui/SearchBar"
 
+const PAGE_SIZE = 12
+
 interface HomePageProps {
-  searchParams: Promise<{ specialty?: string; q?: string }>
+  searchParams: Promise<{ specialty?: string; q?: string; page?: string }>
 }
 
 async function StoreList({
   specialty,
   query,
+  page = 1,
 }: {
   specialty?: string
   query?: string
+  page?: number
 }) {
   const where: Record<string, unknown> = {}
 
@@ -28,10 +32,18 @@ async function StoreList({
     ]
   }
 
-  const stores = await prisma.store.findMany({
-    where,
-    include: { reviews: { select: { rating: true } } },
-  })
+  const [stores, total] = await Promise.all([
+    prisma.store.findMany({
+      where,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: { reviews: { select: { rating: true } } },
+      orderBy: { name: "asc" },
+    }),
+    prisma.store.count({ where }),
+  ])
+
+  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   const allStores = await prisma.store.findMany({
     select: { specialty: true },
@@ -78,11 +90,37 @@ async function StoreList({
           No se encontraron comercios{specialty ? ` para "${specialty}"` : ""}.
         </p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {storeList.map((store) => (
-            <StoreCard key={store.slug} store={store} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {storeList.map((store) => (
+              <StoreCard key={store.slug} store={store} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-4">
+              {page > 1 && (
+                <a
+                  href={`/?specialty=${specialty ?? ""}&page=${page - 1}`}
+                  className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  ← Previous
+                </a>
+              )}
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Page {page} of {totalPages}
+              </span>
+              {page < totalPages && (
+                <a
+                  href={`/?specialty=${specialty ?? ""}&page=${page + 1}`}
+                  className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  Next →
+                </a>
+              )}
+            </div>
+          )}
+        </>
       )}
     </>
   )
@@ -92,6 +130,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   const params = await searchParams
   const specialty = params.specialty
   const query = params.q
+  const page = parseInt(params.page ?? "1", 10) || 1
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -104,7 +143,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         </p>
       </header>
 
-      <StoreList specialty={specialty} query={query} />
+      <StoreList specialty={specialty} query={query} page={page} />
     </div>
   )
 }

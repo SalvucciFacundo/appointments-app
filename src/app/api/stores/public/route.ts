@@ -1,7 +1,9 @@
 import prisma from "@/lib/prisma"
+import { parsePagination, paginatedResponse } from "@/lib/pagination"
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
+  const { skip, take, page } = parsePagination(url)
   const specialty = url.searchParams.get("specialty")
 
   const where: Record<string, unknown> = {}
@@ -9,12 +11,18 @@ export async function GET(request: Request) {
     where.specialty = { contains: specialty, mode: "insensitive" }
   }
 
-  const stores = await prisma.store.findMany({
-    where,
-    include: { reviews: { select: { rating: true } } },
-  })
+  const [stores, total] = await Promise.all([
+    prisma.store.findMany({
+      where,
+      skip,
+      take,
+      include: { reviews: { select: { rating: true } } },
+      orderBy: { name: "asc" },
+    }),
+    prisma.store.count({ where }),
+  ])
 
-  const result = stores.map((store) => {
+  const data = stores.map((store) => {
     const ratings = store.reviews.map((r) => r.rating)
     const averageRating =
       ratings.length > 0
@@ -32,5 +40,5 @@ export async function GET(request: Request) {
     }
   })
 
-  return Response.json(result)
+  return Response.json(paginatedResponse(data, total, page, take))
 }
