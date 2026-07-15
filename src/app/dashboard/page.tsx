@@ -21,6 +21,7 @@ import TodayAgenda from "@/components/appointments/TodayAgenda"
 import PendingQueue from "@/components/appointments/PendingQueue"
 import DayCalendar from "@/components/appointments/DayCalendar"
 import AppointmentDetail from "@/components/appointments/AppointmentDetail"
+import { StatusBarChart } from "@/components/charts/AppointmentChart"
 import {
   getCalendarStatus,
   enableCalendar,
@@ -424,7 +425,7 @@ export default function DashboardPage() {
       {/* Analytics (toast notifications replaced inline messages) */}
       {stats && (
         <Card title="Appointment Analytics">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-6">
             <StatCard label="Today" value={stats.todayCount} />
             <StatCard label="Total" value={sumTotal(stats.total)} />
             <StatCard label="Completed" value={stats.total["COMPLETED"] ?? 0} />
@@ -437,6 +438,9 @@ export default function DashboardPage() {
               {stats.repeatCustomers} repeat customer{stats.repeatCustomers !== 1 ? "s" : ""}
             </p>
           )}
+          <div className="mt-4">
+            <StatusBarChart stats={stats} />
+          </div>
         </Card>
       )}
 
