@@ -1,26 +1,12 @@
 import prisma from "@/lib/prisma"
 import { assertOwnerAccess } from "@/lib/api-helpers"
-import type { AppointmentStatus } from "@prisma/client"
 import { sendCancellationEmail } from "@/lib/email"
 import { buildManagementUrl } from "@/lib/management-link"
 import { deleteEvent } from "@/lib/calendar/events"
+import { validateTransition } from "@/lib/state-machine"
 
 interface RouteParams {
   params: Promise<{ storeId: string; id: string }>
-}
-
-// State machine: "current status" → set of allowed target statuses
-const VALID_TRANSITIONS: Record<string, AppointmentStatus[]> = {
-  PENDING: ["CONFIRMED", "CANCELLED"],
-  CONFIRMED: ["COMPLETED", "CANCELLED"],
-  // CANCELLED and COMPLETED are terminal — no transitions
-}
-
-// Maps action strings to target statuses
-const ACTION_TO_STATUS: Record<string, AppointmentStatus> = {
-  CONFIRM: "CONFIRMED",
-  REJECT: "CANCELLED",
-  COMPLETE: "COMPLETED",
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
@@ -32,23 +18,11 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const body = await request.json().catch(() => ({}))
     const { action } = body as { action?: string }
 
-    // Validate action
     if (!action || typeof action !== "string") {
       return Response.json(
         {
           error: "Validation failed",
           errors: [{ field: "action", message: "action is required (CONFIRM, REJECT, or COMPLETE)" }],
-        },
-        { status: 400 },
-      )
-    }
-
-    const targetStatus = ACTION_TO_STATUS[action.toUpperCase()]
-    if (!targetStatus) {
-      return Response.json(
-        {
-          error: "Validation failed",
-          errors: [{ field: "action", message: "action must be CONFIRM, REJECT, or COMPLETE" }],
         },
         { status: 400 },
       )
@@ -63,22 +37,19 @@ export async function PUT(request: Request, { params }: RouteParams) {
       return Response.json({ error: "Appointment not found" }, { status: 404 })
     }
 
-    // Enforce state machine
-    const allowed = VALID_TRANSITIONS[appointment.status]
-    if (!allowed || !allowed.includes(targetStatus)) {
+    // Validate transition using pure function (testable)
+    const transition = validateTransition(appointment.status, action)
+    if (!transition.valid) {
       return Response.json(
         {
           error: "Invalid status transition",
-          errors: [
-            {
-              field: "action",
-              message: `Cannot transition from ${appointment.status} to ${targetStatus}`,
-            },
-          ],
+          errors: [{ field: "action", message: transition.error }],
         },
         { status: 400 },
       )
     }
+
+    const targetStatus = transition.targetStatus
 
     const updated = await prisma.appointment.update({
       where: { id },
