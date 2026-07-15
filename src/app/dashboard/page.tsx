@@ -108,12 +108,14 @@ export default function DashboardPage() {
 
   // Calendar sync
   const [calendarEnabled, setCalendarEnabled] = useState(false)
+  const [calendarError, setCalendarError] = useState<string | null>(null)
   const [calendarLoading, setCalendarLoading] = useState(false)
 
   const loadCalendarStatus = useCallback(async (storeId: string) => {
     try {
-      const { enabled } = await getCalendarStatus(storeId)
-      setCalendarEnabled(enabled)
+      const data = await getCalendarStatus(storeId)
+      setCalendarEnabled(data.enabled)
+      setCalendarError(data.lastSyncError ?? null)
     } catch {
       // Calendar not configured — stay disabled
     }
@@ -582,6 +584,17 @@ export default function DashboardPage() {
 
       {/* Calendar Sync */}
       <Card title="Google Calendar Sync">
+        {calendarError && (
+          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">
+              ⚠ Sync error
+            </p>
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+              {calendarError}
+            </p>
+          </div>
+        )}
+
         {calendarEnabled ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

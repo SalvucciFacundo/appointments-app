@@ -111,13 +111,15 @@ model Review {
 }
 
 model CalendarSync {
-  id           String   @id @default(cuid())
-  storeId      String   @unique
-  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  accessToken  String
-  refreshToken String
-  expiryDate   DateTime
-  calendarId   String?
+  id            String   @id @default(cuid())
+  storeId       String   @unique
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  accessToken   String
+  refreshToken  String
+  expiryDate    DateTime
+  calendarId    String?
+  lastSyncError String?  // Stores the last error message (401, quota exceeded, etc.)
+  lastSyncAt    DateTime? // Last successful sync timestamp
 }
 
 model Account {

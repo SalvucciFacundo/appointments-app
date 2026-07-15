@@ -79,3 +79,32 @@ export async function refreshAccessToken(
 
   return client
 }
+
+/**
+ * Records a sync error on the CalendarSync record so the dashboard
+ * can display reconnection warnings to the owner.
+ */
+export async function recordSyncError(syncId: string, errorMessage: string): Promise<void> {
+  try {
+    await prisma.calendarSync.update({
+      where: { id: syncId },
+      data: { lastSyncError: errorMessage.slice(0, 500) },
+    })
+  } catch {
+    // Silently fail — error recording is non-critical
+  }
+}
+
+/**
+ * Clears the sync error after a successful operation.
+ */
+export async function clearSyncError(syncId: string): Promise<void> {
+  try {
+    await prisma.calendarSync.update({
+      where: { id: syncId },
+      data: { lastSyncError: null, lastSyncAt: new Date() },
+    })
+  } catch {
+    // Silently fail
+  }
+}

@@ -6,28 +6,57 @@ Prioritized portfolio improvements for Appointments-app.
 
 ### 1.1 Test Suite (Vitest)
 
-- [ ] Install Vitest + @testing-library/react
-- [ ] Unit tests for `src/lib/slots.ts` — `getAvailableSlots()` edge cases (cross-midnight, blocked dates, capacity, timezone)
+- [x] Install Vitest
+- [x] Unit tests for `src/lib/slots.ts` — `getAvailableSlots()` edge cases
+- [x] Unit tests for validators (`validateTimeFormat`, `validateDayOfWeek`, `validateFutureDate`)
+- [x] Unit tests for rate limiter
 - [ ] Unit tests for status state machine in appointments API
-- [ ] Unit tests for `src/lib/management-link.ts` — token generation + URL building
 - [ ] Integration test for booking endpoint (mocked DB)
 - [ ] Integration test for cron reminder endpoint (mocked Resend)
 - [ ] Configure CI to run tests on push
 
 ### 1.2 Rate Limiting (Anonymous Booking)
 
-- [ ] Install or implement in-memory rate limiter
-- [ ] Apply rate limit to POST /api/stores/[storeId]/book (anonymous only)
-- [ ] Return 429 with Retry-After header when exceeded
-- [ ] Apply rate limit to POST /api/reviews (authenticated, per-user)
-- [ ] Verify via build + test
+- [x] Install or implement in-memory rate limiter
+- [x] Apply rate limit to POST /api/stores/[storeId]/book (anonymous only)
+- [x] Return 429 with Retry-After header when exceeded
+- [x] Apply rate limit to POST /api/reviews (authenticated, per-user)
+- [x] Verify via build + test
 
 ### 1.3 Google Calendar — Expired Token Handling
 
-- [ ] Add `lastSyncError String?` field to CalendarSync model
+- [ ] Add `lastSyncError String?` field to CalendarSync model + migration
 - [ ] Detect 401 from Google Calendar API in events.ts → store error message
 - [ ] Expose error status in GET /api/stores/[storeId]/calendar response
 - [ ] Show reconnection warning in dashboard calendar section
+
+### 1.4 Toast Notification System
+
+- [x] Create `src/components/ui/Toast.tsx` — floating notification with variants
+- [x] Create toast context + provider for global state
+- [x] Integrate into layout + all interactive pages
+- [x] Auto-dismiss after 4s, manual dismiss button
+
+## Priority 2 — UX & Scale
+
+### 2.0 Multi-Store Support
+
+- [ ] Remove `@unique` from `Store.ownerId` — change User↔Store to 1:N
+- [ ] Add `Store[] stores` relation on User model (replace `Store? store`)
+- [ ] Run migration
+- [ ] Update `getCurrentStore` API to return list, accept store selection
+- [ ] Update onboarding: allow creating additional stores
+- [ ] Add store selector to dashboard header
+- [ ] Update all owner API routes to verify store belongs to user (already uses `assertOwnerAccess`)
+
+### 2.1 Google Maps Location
+
+- [ ] Add `latitude Float?` and `longitude Float?` to Store model + migration
+- [ ] Update onboarding form to accept location (or auto-detect)
+- [ ] Display location as Google Maps link on store public page
+- [ ] Add map embed on store detail page (optional)
+
+### 2.2 Pagination
 - [ ] Verify via build
 
 ## Priority 2 — UX & Scale

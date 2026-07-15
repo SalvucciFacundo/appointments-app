@@ -1,6 +1,19 @@
 import { google } from "googleapis"
-import { refreshAccessToken } from "./oauth"
+import { refreshAccessToken, recordSyncError, clearSyncError } from "./oauth"
 import type { CalendarSync, Store } from "@prisma/client"
+
+/** Extracts a human-readable error message from a Google API error */
+function extractError(err: unknown): string {
+  if (typeof err === "object" && err !== null) {
+    const e = err as { code?: number; message?: string; errors?: Array<{ message: string }> }
+    if (e.code === 401) return "Google Calendar token expired — reconnect in dashboard"
+    if (e.code === 403) return "Google Calendar access denied — check permissions"
+    if (e.code === 429) return "Google Calendar quota exceeded — try again later"
+    if (e.message) return e.message
+    if (e.errors?.[0]?.message) return e.errors[0].message
+  }
+  return "Unknown Google Calendar error"
+}
 
 interface CalendarEventInput {
   id: string
@@ -53,9 +66,13 @@ export async function createEvent(
       },
     })
 
+    // Clear any previous error on success
+    await clearSyncError(sync.id).catch(() => {})
     return response.data.id ?? null
-  } catch (err) {
-    console.error("[calendar] Failed to create event:", err)
+  } catch (err: unknown) {
+    const msg = extractError(err)
+    console.error("[calendar] Failed to create event:", msg)
+    await recordSyncError(sync.id, msg).catch(() => {})
     return null
   }
 }
@@ -98,9 +115,12 @@ export async function updateEvent(
       },
     })
 
+    await clearSyncError(sync.id).catch(() => {})
     return true
-  } catch (err) {
-    console.error("[calendar] Failed to update event:", err)
+  } catch (err: unknown) {
+    const msg = extractError(err)
+    console.error("[calendar] Failed to update event:", msg)
+    await recordSyncError(sync.id, msg).catch(() => {})
     return false
   }
 }
@@ -132,9 +152,12 @@ export async function deleteEvent(
       "code" in err &&
       (err as { code: number }).code === 410
     ) {
+      await clearSyncError(sync.id).catch(() => {})
       return true
     }
-    console.error("[calendar] Failed to delete event:", err)
+    const msg = extractError(err)
+    console.error("[calendar] Failed to delete event:", msg)
+    await recordSyncError(sync.id, msg).catch(() => {})
     return false
   }
 }

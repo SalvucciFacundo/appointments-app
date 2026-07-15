@@ -23,6 +23,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return Response.json({
       enabled: sync !== null,
       calendarId: sync?.calendarId ?? null,
+      lastSyncError: sync?.lastSyncError ?? null,
+      lastSyncAt: sync?.lastSyncAt?.toISOString() ?? null,
     })
   } catch (e) {
     if (e instanceof Response) return e

@@ -3,6 +3,8 @@
 interface CalendarStatusResponse {
   enabled: boolean
   calendarId: string | null
+  lastSyncError: string | null
+  lastSyncAt: string | null
 }
 
 interface AuthUrlResponse {
