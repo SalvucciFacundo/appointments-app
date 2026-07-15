@@ -14,6 +14,11 @@ import {
   type BusinessHourInput,
   type ApiError,
 } from "@/lib/stores"
+import type { AppointmentData } from "@/lib/appointments"
+import TodayAgenda from "@/components/appointments/TodayAgenda"
+import PendingQueue from "@/components/appointments/PendingQueue"
+import DayCalendar from "@/components/appointments/DayCalendar"
+import AppointmentDetail from "@/components/appointments/AppointmentDetail"
 
 const DAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
@@ -54,6 +59,10 @@ export default function DashboardPage() {
   // Blocked dates
   const [newBlockedDate, setNewBlockedDate] = useState("")
   const [newBlockedReason, setNewBlockedReason] = useState("")
+
+  // Appointment detail modal
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentData | null>(null)
+  const [appointmentRefreshKey, setAppointmentRefreshKey] = useState(0)
 
   const showMessage = (type: "success" | "error", text: string) => {
     setMessage({ type, text })
@@ -464,6 +473,32 @@ export default function DashboardPage() {
           </ul>
         )}
       </Card>
+
+      {/* ---- Appointment Sections ---- */}
+      <PendingQueue key={`pending-${appointmentRefreshKey}`} storeId={store.id} />
+
+      <TodayAgenda
+        key={`agenda-${appointmentRefreshKey}`}
+        storeId={store.id}
+        onSelectAppointment={setSelectedAppointment}
+      />
+
+      <DayCalendar
+        key={`calendar-${appointmentRefreshKey}`}
+        storeId={store.id}
+        store={store}
+      />
+
+      {/* Appointment Detail Modal */}
+      <AppointmentDetail
+        appointment={selectedAppointment}
+        storeId={store.id}
+        onClose={() => setSelectedAppointment(null)}
+        onStatusChanged={() => {
+          setSelectedAppointment(null)
+          setAppointmentRefreshKey((k) => k + 1)
+        }}
+      />
     </div>
   )
 }
