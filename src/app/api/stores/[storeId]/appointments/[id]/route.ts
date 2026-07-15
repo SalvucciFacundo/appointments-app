@@ -3,6 +3,7 @@ import { assertOwnerAccess } from "@/lib/api-helpers"
 import type { AppointmentStatus } from "@prisma/client"
 import { sendCancellationEmail } from "@/lib/email"
 import { buildManagementUrl } from "@/lib/management-link"
+import { deleteEvent } from "@/lib/calendar/events"
 
 interface RouteParams {
   params: Promise<{ storeId: string; id: string }>
@@ -101,6 +102,24 @@ export async function PUT(request: Request, { params }: RouteParams) {
       }).catch((err) => {
         console.error("[appointments] Failed to send cancellation email:", err)
       })
+
+      // Fire-and-forget Google Calendar event deletion
+      const googleEventId = appointment.googleEventId
+      if (googleEventId) {
+        prisma.calendarSync
+          .findUnique({ where: { storeId: storeId } })
+          .then((sync) => {
+            if (sync) {
+              return deleteEvent(sync, googleEventId)
+            }
+          })
+          .catch((err) => {
+            console.error(
+              "[appointments] Failed to delete calendar event:",
+              err,
+            )
+          })
+      }
     }
 
     return Response.json({

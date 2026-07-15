@@ -19,6 +19,11 @@ import TodayAgenda from "@/components/appointments/TodayAgenda"
 import PendingQueue from "@/components/appointments/PendingQueue"
 import DayCalendar from "@/components/appointments/DayCalendar"
 import AppointmentDetail from "@/components/appointments/AppointmentDetail"
+import {
+  getCalendarStatus,
+  enableCalendar,
+  disableCalendar,
+} from "@/lib/calendar-client"
 
 const DAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
@@ -64,6 +69,19 @@ export default function DashboardPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentData | null>(null)
   const [appointmentRefreshKey, setAppointmentRefreshKey] = useState(0)
 
+  // Calendar sync
+  const [calendarEnabled, setCalendarEnabled] = useState(false)
+  const [calendarLoading, setCalendarLoading] = useState(false)
+
+  const loadCalendarStatus = useCallback(async (storeId: string) => {
+    try {
+      const { enabled } = await getCalendarStatus(storeId)
+      setCalendarEnabled(enabled)
+    } catch {
+      // Calendar not configured — stay disabled
+    }
+  }, [])
+
   const showMessage = (type: "success" | "error", text: string) => {
     setMessage({ type, text })
     setTimeout(() => setMessage(null), 4000)
@@ -95,6 +113,8 @@ export default function DashboardPage() {
             }),
           )
         }
+
+        loadCalendarStatus(data.id)
       }
     } catch (err) {
       const apiErr = err as ApiError
@@ -217,6 +237,36 @@ export default function DashboardPage() {
       showMessage("error", apiErr?.error ?? "Failed to remove blocked date")
     } finally {
       setSaving(null)
+    }
+  }
+
+  // ---- Calendar Handlers ----
+
+  async function handleConnectCalendar() {
+    if (!store) return
+    setCalendarLoading(true)
+    try {
+      const { url } = await enableCalendar(store.id)
+      window.location.href = url
+    } catch (err) {
+      const apiErr = err as ApiError
+      showMessage("error", apiErr?.error ?? "Failed to connect calendar")
+      setCalendarLoading(false)
+    }
+  }
+
+  async function handleDisconnectCalendar() {
+    if (!store) return
+    setCalendarLoading(true)
+    try {
+      await disableCalendar(store.id)
+      setCalendarEnabled(false)
+      showMessage("success", "Google Calendar disconnected")
+    } catch (err) {
+      const apiErr = err as ApiError
+      showMessage("error", apiErr?.error ?? "Failed to disconnect calendar")
+    } finally {
+      setCalendarLoading(false)
     }
   }
 
@@ -471,6 +521,46 @@ export default function DashboardPage() {
               </li>
             ))}
           </ul>
+        )}
+      </Card>
+
+      {/* Calendar Sync */}
+      <Card title="Google Calendar Sync">
+        {calendarEnabled ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                Connected
+              </span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Appointments are synced to Google Calendar
+              </span>
+            </div>
+            <Button
+              variant="danger"
+              onClick={handleDisconnectCalendar}
+              loading={calendarLoading}
+            >
+              Disconnect
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                Not connected
+              </span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Connect to sync appointments automatically
+              </span>
+            </div>
+            <Button
+              onClick={handleConnectCalendar}
+              loading={calendarLoading}
+            >
+              Connect Google Calendar
+            </Button>
+          </div>
         )}
       </Card>
 

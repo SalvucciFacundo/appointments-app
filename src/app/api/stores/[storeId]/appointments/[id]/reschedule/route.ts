@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma"
 import { assertOwnerAccess } from "@/lib/api-helpers"
 import { getAvailableSlots, type SlotStoreInput } from "@/lib/slots"
+import { updateEvent } from "@/lib/calendar/events"
 
 interface RouteParams {
   params: Promise<{ storeId: string; id: string }>
@@ -49,7 +50,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     // Fetch full store config for slot validation
     const storeWithConfig = await prisma.store.findUnique({
       where: { id: storeId },
-      include: { businessHours: true, blockedDates: true },
+      include: { businessHours: true, blockedDates: true, calendarSync: true },
     })
 
     if (!storeWithConfig) {
@@ -167,6 +168,26 @@ export async function PUT(request: Request, { params }: RouteParams) {
       where: { id },
       data: { dateTime: newDate },
     })
+
+    // Fire-and-forget Google Calendar event update
+    const googleEventId = appointment.googleEventId
+    if (googleEventId && storeWithConfig.calendarSync) {
+      updateEvent(
+        storeWithConfig.calendarSync,
+        googleEventId,
+        {
+          id: updated.id,
+          clientName: updated.clientName,
+          clientEmail: updated.clientEmail,
+          dateTime: updated.dateTime,
+          service: updated.service,
+          notes: updated.notes,
+        },
+        { name: storeWithConfig.name, timezone: storeWithConfig.timezone },
+      ).catch((err) => {
+        console.error("[reschedule] Failed to update calendar event:", err)
+      })
+    }
 
     return Response.json({
       id: updated.id,

@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma"
 import { getAvailableSlots } from "@/lib/slots"
 import { generateManagementToken, buildManagementUrl } from "@/lib/management-link"
 import { sendConfirmationEmail } from "@/lib/email"
+import { createEvent } from "@/lib/calendar/events"
 
 interface RouteParams {
   params: Promise<{ storeId: string }>
@@ -77,6 +78,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     include: {
       businessHours: true,
       blockedDates: true,
+      calendarSync: true,
     },
   })
 
@@ -152,6 +154,33 @@ export async function POST(request: Request, { params }: RouteParams) {
   }).catch((err) => {
     console.error("[book] Failed to send confirmation email:", err)
   })
+
+  // Fire-and-forget Google Calendar event creation
+  if (store.calendarSync) {
+    createEvent(
+      store.calendarSync,
+      {
+        id: appointment.id,
+        clientName: appointment.clientName,
+        clientEmail: appointment.clientEmail,
+        dateTime: appointment.dateTime,
+        service: appointment.service,
+        notes: appointment.notes,
+      },
+      { name: store.name, timezone: store.timezone },
+    )
+      .then((googleEventId) => {
+        if (googleEventId) {
+          return prisma.appointment.update({
+            where: { id: appointment.id },
+            data: { googleEventId },
+          })
+        }
+      })
+      .catch((err) => {
+        console.error("[book] Failed to sync calendar event:", err)
+      })
+  }
 
   return Response.json(
     {
