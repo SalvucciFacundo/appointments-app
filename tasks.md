@@ -1,73 +1,77 @@
-# Plan de Desarrollo: Sistema de Turnos
+# Improvement Tasks
 
-Este documento desglosa el plan de tareas paso a paso para construir la aplicación basándonos en la especificación técnica en `openspec.md`. Cada fase debe completarse y validarse antes de pasar a la siguiente.
+Prioritized portfolio improvements for Appointments-app.
+
+## Priority 1 — Foundation
+
+### 1.1 Test Suite (Vitest)
+
+- [ ] Install Vitest + @testing-library/react
+- [ ] Unit tests for `src/lib/slots.ts` — `getAvailableSlots()` edge cases (cross-midnight, blocked dates, capacity, timezone)
+- [ ] Unit tests for status state machine in appointments API
+- [ ] Unit tests for `src/lib/management-link.ts` — token generation + URL building
+- [ ] Integration test for booking endpoint (mocked DB)
+- [ ] Integration test for cron reminder endpoint (mocked Resend)
+- [ ] Configure CI to run tests on push
+
+### 1.2 Rate Limiting (Anonymous Booking)
+
+- [ ] Install or implement in-memory rate limiter
+- [ ] Apply rate limit to POST /api/stores/[storeId]/book (anonymous only)
+- [ ] Return 429 with Retry-After header when exceeded
+- [ ] Apply rate limit to POST /api/reviews (authenticated, per-user)
+- [ ] Verify via build + test
+
+### 1.3 Google Calendar — Expired Token Handling
+
+- [ ] Add `lastSyncError String?` field to CalendarSync model
+- [ ] Detect 401 from Google Calendar API in events.ts → store error message
+- [ ] Expose error status in GET /api/stores/[storeId]/calendar response
+- [ ] Show reconnection warning in dashboard calendar section
+- [ ] Verify via build
+
+## Priority 2 — UX & Scale
+
+### 2.1 Pagination
+
+- [ ] Add cursor/page params to GET /api/stores/public
+- [ ] Add pagination to GET /api/admin/stores
+- [ ] Add pagination to GET /api/admin/reviews
+- [ ] Add pagination to GET /api/stores/[storeId]/appointments
+- [ ] Add load-more or page controls in UI components (landing, admin, dashboard)
+- [ ] Verify via build
+
+### 2.2 Persistent Dark Mode
+
+- [ ] Add localStorage toggle in layout
+- [ ] Persist preference across sessions
+- [ ] Respect system preference as default (current behavior)
+- [ ] Add sun/moon toggle button in header
+- [ ] Verify persistence across page reloads
+
+### 2.3 Two-Way Google Calendar Sync
+
+- [ ] Implement Push Webhook endpoint (POST /api/calendar/webhook)
+- [ ] Register webhook with Google Calendar API on sync activation
+- [ ] Handle sync events: event updated/deleted → update Appointment
+- [ ] Test with manual Google Calendar changes
+
+## Priority 3 — Portfolio Polish
+
+### 3.1 Interactive Charts
+
+- [ ] Install Recharts
+- [ ] Replace stat cards in dashboard analytics with bar chart (appointments by hour)
+- [ ] Add line chart (appointments over last 30 days)
+- [ ] Replace stat cards in admin global metrics with mini charts
+- [ ] Verify build + dark mode compatibility
 
 ---
 
-## Fase 1: Inicialización del Proyecto y Base de Datos
-*   [ ] **1.1 Inicializar Next.js**: Configurar el proyecto de Next.js en TypeScript utilizando App Router.
-*   [ ] **1.2 Configurar Base de Datos**: Levantar PostgreSQL y conectar Prisma ORM.
-*   [ ] **1.3 Definir Esquema de Datos**: Crear los modelos (`User`, `Store`, `Appointment`, `Review`, `BlockedDate`, `BusinessHour`, `CalendarSync`) definidos en `openspec.md` y correr la migración inicial.
+## Execution Order
 
-## Fase 2: Autenticación y Control de Roles
-*   [ ] **2.1 Configurar Auth.js (NextAuth)**: Integrar login con Google Provider.
-*   [ ] **2.2 Middleware de Rutas**: Implementar middleware de Next.js para proteger rutas:
-    *   `/admin/*` -> Exclusivo para rol `ADMIN`.
-    *   `/dashboard/*` -> Exclusivo para rol `OWNER` (redireccionar al onboarding si no tiene una tienda registrada).
-    *   `/perfil/*` -> Exclusivo para usuarios autenticados (`USER`).
-*   [ ] **2.3 Sembrado de Datos (Seed)**: Script para insertar tiendas y usuarios de prueba (incluyendo un administrador de prueba).
-
-## Fase 3: Portal del Dueño (Owner Onboarding & Configuración)
-*   [ ] **3.1 Registro de Tienda (Onboarding)**: Formulario paso a paso para que un `OWNER` registre su negocio (nombre, dirección, especialidad, etc.).
-*   [ ] **3.2 Configuración de Agenda**:
-    *   CRUD de horarios semanales de atención (`BusinessHour`).
-    *   Formulario para definir la duración del slot de turno y capacidad.
-    *   Selector de días bloqueados (`BlockedDate`) para vacaciones o feriados.
-    *   Configuración del límite de cancelación (horas de anticipación).
-
-## Fase 4: Dashboard y Gestión de Turnos del Dueño
-*   [ ] **4.1 Calendario del Dueño**: UI interactiva premium para visualizar la agenda del día, semana y mes.
-*   [ ] **4.2 CRUD de Turnos del Dueño**: Modales para cancelar turnos, modificar fechas/horas de reservas y marcar turnos como completados.
-*   [ ] **4.3 Alertas de Reservas Pendientes (`PENDING`)**:
-    *   Notificación en el dashboard al recibir reservas de clientes no registrados.
-    *   Modal con detalles y botón dinámico a `https://wa.me/...` para coordinar de forma gratuita por WhatsApp.
-    *   Acción para confirmar (`CONFIRMED`) o rechazar la reserva.
-
-## Fase 5: Landing Page y Flujo del Cliente
-*   [ ] **5.1 Landing Page Pública**: Buscador con filtros por especialidad y tarjetas premium de tiendas registradas con su calificación media.
-*   [ ] **5.2 Página de la Tienda**:
-    *   Visualizador del calendario interactivo del cliente (slots libres calculados dinámicamente restando turnos existentes, horas de negocio y días bloqueados).
-*   [ ] **5.3 Formulario de Reserva**:
-    *   Para no registrados: Ingresar nombre, celular e email (el turno entra como `PENDING`).
-    *   Para registrados: Reserva con 1 click (el turno entra como `CONFIRMED`).
-*   [ ] **5.4 Panel de Perfil de Cliente**:
-    *   Visualizar historial de turnos e indicador de estados.
-    *   Guardar y listar tiendas favoritas.
-    *   Sistema de reseñas y comentarios (máximo 1 reseña por cliente a cada tienda).
-
-## Fase 6: Notificaciones Automáticas (Resend & WhatsApp API)
-*   [ ] **6.1 Emails de Reserva (Resend)**:
-    *   Enviar email inmediato de confirmación con link único de cancelación y reprogramación al crear la cita.
-*   [ ] **6.2 Cron Job de Recordatorios**:
-    *   Implementar un Endpoint API en Next.js protegido para ejecutar tareas cron (ej. vía Vercel Cron).
-    *   El cron busca turnos a 1 hora de comenzar y dispara:
-        *   Notificación oficial de WhatsApp vía **Meta Cloud API** (usando plantilla aprobada).
-        *   Email de recordatorio de respaldo vía **Resend**.
-
-## Fase 7: Integración con Google Calendar
-*   [ ] **7.1 Flujo OAuth de Google Calendar**: Configurar los scopes necesarios y guardar el `accessToken` y `refreshToken` del dueño al activar la sincronización.
-*   [ ] **7.2 Sincronización de Reservas**:
-    *   Al confirmar un turno (`CONFIRMED`), insertarlo dinámicamente como evento en el Google Calendar del dueño.
-    *   Al cancelar o modificar el turno, sincronizar el evento en Google Calendar usando el id del evento guardado.
-
-## Fase 8: Panel de Administración Global y Estadísticas
-*   [ ] **8.1 Dashboard de Estadísticas del Dueño**: Gráficos e indicadores de ventas estimadas, tasa de asistencia, horarios pico y clientes recurrentes.
-*   [ ] **8.2 Panel del Admin General**:
-    *   CRUD de gestión y suspensión de tiendas.
-    *   Moderador de comentarios y reseñas.
-    *   Métricas globales del uso de la plataforma.
-
-## Fase 9: PWA y Lanzamiento
-*   [ ] **9.1 Configuración de PWA**: Configurar manifest y service workers para que la aplicación sea instalable en dispositivos móviles.
-*   [ ] **9.2 Optimización de Rendimiento e Interfaz**: Animaciones de carga y transiciones CSS fluidas.
-*   [ ] **9.3 Despliegue**: Subir a producción (ej. Vercel, Supabase/Neon PostgreSQL).
+1. Tests first (Vitest) — everything else is easier to verify with tests
+2. Rate limiting — quick win, security gap
+3. Google Calendar error handling — small change
+4. Then Priority 2 in any order (independent)
+5. Charts last (pure UI, no logic changes)
