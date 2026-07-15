@@ -98,6 +98,14 @@ Prioritized portfolio improvements for Appointments-app.
 
 ## Priority 3 — Portfolio Polish
 
+### 3.0 Progressive Web App (PWA)
+
+- [ ] Create `public/manifest.json` with app name, icons, theme color
+- [ ] Add PWA icons (192x192, 512x512)
+- [ ] Register service worker or use Next.js PWA plugin
+- [ ] Add `<link rel="manifest">` and `<meta name="theme-color">` to layout
+- [ ] Verify app can be installed on mobile/desktop
+
 ### 3.1 Interactive Charts
 
 - [ ] Install Recharts
