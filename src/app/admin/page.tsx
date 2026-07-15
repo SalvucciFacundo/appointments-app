@@ -19,6 +19,13 @@ interface AdminStore {
   owner: { id: string; name: string | null; email: string | null }
 }
 
+interface IntegrationStatus {
+  email: { provider: string; configured: boolean; note: string }
+  whatsapp: { provider: string; configured: boolean; note: string }
+  cron: { configured: boolean; note: string }
+  googleCalendar: { configured: boolean; storesConnected: number; totalStores: number; note: string }
+}
+
 interface AdminReview {
   id: string
   storeId: string
@@ -54,6 +61,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [stores, setStores] = useState<AdminStore[]>([])
   const [reviews, setReviews] = useState<AdminReview[]>([])
+  const [integrations, setIntegrations] = useState<IntegrationStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -74,15 +82,17 @@ export default function AdminPage() {
         return
       }
 
-      const [statsData, storesData, reviewsData] = await Promise.all([
-        statsRes.json(),
-        storesRes.json(),
-        reviewsRes.json(),
+      const [statsData, storesData, reviewsData, integrationsData] = await Promise.all([
+        fetch("/api/admin/stats").then((r) => r.json()),
+        fetch("/api/admin/stores").then((r) => r.json()),
+        fetch("/api/admin/reviews").then((r) => r.json()),
+        fetch("/api/admin/integrations").then((r) => r.json()),
       ])
 
       setStats(statsData)
       setStores(storesData)
       setReviews(reviewsData)
+      setIntegrations(integrationsData)
     } catch {
       setError("Failed to load admin data")
     } finally {
@@ -153,6 +163,79 @@ export default function AdminPage() {
             <MetricCard label="Appointments" value={stats.totalAppointments} />
             <MetricCard label="Users" value={stats.totalUsers} />
             <MetricCard label="Reviews" value={stats.totalReviews} />
+          </div>
+        </Card>
+      )}
+
+      {/* Integrations */}
+      {integrations && (
+        <Card title="Integrations">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email</p>
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                    integrations.email.configured
+                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                  }`}
+                >
+                  {integrations.email.configured ? "Active" : "Not configured"}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {integrations.email.provider} — {integrations.email.note}
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">WhatsApp</p>
+                <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                  Stub
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {integrations.whatsapp.provider} — {integrations.whatsapp.note}
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Cron Reminders</p>
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                    integrations.cron.configured
+                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                  }`}
+                >
+                  {integrations.cron.configured ? "Configured" : "Not configured"}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{integrations.cron.note}</p>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Google Calendar
+                </p>
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                    integrations.googleCalendar.configured
+                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                  }`}
+                >
+                  {integrations.googleCalendar.configured ? "Ready" : "Not configured"}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {integrations.googleCalendar.note}
+              </p>
+            </div>
           </div>
         </Card>
       )}
