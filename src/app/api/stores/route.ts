@@ -35,45 +35,54 @@ export async function POST(request: Request) {
 
   const slug = await generateUniqueSlug(name as string)
 
-  // Create store and update user role in a transaction
-  const [store] = await prisma.$transaction([
-    prisma.store.create({
-      data: {
-        name: (name as string).trim(),
-        slug,
-        description: typeof description === "string" ? description.trim() : null,
-        address: (address as string).trim(),
-        phone: typeof phone === "string" ? phone.trim() : null,
-        specialty: (specialty as string).trim(),
-        ownerId: session.user.id,
-      },
-    }),
-    prisma.user.update({
-      where: { id: session.user.id },
-      data: { role: "OWNER" },
-    }),
-  ])
+  // Create store
+  const store = await prisma.store.create({
+    data: {
+      name: (name as string).trim(),
+      slug,
+      description: typeof description === "string" ? description.trim() : null,
+      address: (address as string).trim(),
+      phone: typeof phone === "string" ? phone.trim() : null,
+      specialty: (specialty as string).trim(),
+      ownerId: session.user.id,
+    },
+  })
+
+  // Ensure user is OWNER (idempotent — safe to call multiple times)
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { role: "OWNER" },
+  })
 
   return Response.json(store, { status: 201 })
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth()
   if (!session?.user?.id) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const store = await prisma.store.findFirst({
-    where: { ownerId: session.user.id },
-    include: {
-      businessHours: true,
-      blockedDates: true,
-    },
-  })
+  const { searchParams } = new URL(request.url)
+  const storeId = searchParams.get("storeId")
 
-  if (!store) {
-    return Response.json({ error: "No store found" }, { status: 404 })
+  // If a specific storeId is requested, return just that one
+  if (storeId) {
+    const store = await prisma.store.findFirst({
+      where: { id: storeId, ownerId: session.user.id },
+      include: { businessHours: true, blockedDates: true },
+    })
+    if (!store) {
+      return Response.json({ error: "Store not found" }, { status: 404 })
+    }
+    return Response.json(store)
   }
 
-  return Response.json(store)
+  // Otherwise return all stores for the user
+  const stores = await prisma.store.findMany({
+    where: { ownerId: session.user.id },
+    include: { businessHours: true, blockedDates: true },
+  })
+
+  return Response.json(stores)
 }

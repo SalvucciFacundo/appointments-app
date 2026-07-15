@@ -93,12 +93,26 @@ export async function createStore(data: CreateStoreInput): Promise<StoreData> {
   return handleResponse<StoreData>(res)
 }
 
-export async function getCurrentStore(): Promise<StoreData | null> {
+export async function getUserStores(): Promise<StoreData[]> {
   const res = await fetch(API_BASE, {
+    headers: { "Content-Type": "application/json" },
+  })
+  if (res.status === 404) return []
+  return handleResponse<StoreData[]>(res)
+}
+
+export async function getStoreById(storeId: string): Promise<StoreData | null> {
+  const res = await fetch(`${API_BASE}?storeId=${storeId}`, {
     headers: { "Content-Type": "application/json" },
   })
   if (res.status === 404) return null
   return handleResponse<StoreData>(res)
+}
+
+/** @deprecated Use getUserStores() instead — returns list of stores */
+export async function getCurrentStore(): Promise<StoreData | null> {
+  const stores = await getUserStores()
+  return stores[0] ?? null
 }
 
 export async function updateStore(id: string, data: UpdateStoreInput): Promise<StoreData> {

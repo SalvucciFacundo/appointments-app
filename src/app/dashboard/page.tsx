@@ -6,7 +6,8 @@ import Button from "@/components/ui/Button"
 import Card from "@/components/ui/Card"
 import { useToast } from "@/components/ui/Toast"
 import {
-  getCurrentStore,
+  getUserStores,
+  getStoreById,
   updateStore,
   updateHours,
   addBlockedDate,
@@ -65,8 +66,11 @@ function Skeleton() {
 export default function DashboardPage() {
   const { addToast } = useToast()
 
+  const [stores, setStores] = useState<StoreData[]>([])
   const [store, setStore] = useState<StoreData | null>(null)
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [storesLoading, setStoresLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   // message state replaced by useToast() system
 
@@ -137,10 +141,27 @@ export default function DashboardPage() {
     addToast(text, type)
   }
 
-  const loadStore = useCallback(async () => {
+  // Load all user stores
+  const loadStores = useCallback(async () => {
+    setStoresLoading(true)
+    try {
+      const data = await getUserStores()
+      setStores(data)
+      if (data.length > 0 && !selectedStoreId) {
+        setSelectedStoreId(data[0].id)
+      }
+    } catch {
+      // Silently fail — onboarding redirect handles empty state
+    } finally {
+      setStoresLoading(false)
+    }
+  }, [selectedStoreId])
+
+  // Load specific store data
+  const loadStoreById = useCallback(async (storeId: string) => {
     setLoading(true)
     try {
-      const data = await getCurrentStore()
+      const data = await getStoreById(storeId)
       if (data) {
         setStore(data)
         setEditName(data.name)
@@ -156,7 +177,7 @@ export default function DashboardPage() {
         if (data.businessHours && data.businessHours.length > 0) {
           setHours(
             DAY_LABELS.map((_, i) => {
-              const existing = data.businessHours.find((h) => h.dayOfWeek === i)
+              const existing = data.businessHours.find((h: BusinessHourInput) => h.dayOfWeek === i)
               return existing
                 ? { dayOfWeek: i, openTime: existing.openTime, closeTime: existing.closeTime }
                 : { dayOfWeek: i, openTime: "09:00", closeTime: "18:00" }
@@ -175,9 +196,17 @@ export default function DashboardPage() {
     }
   }, [])
 
+  // Initial load: stores list
   useEffect(() => {
-    loadStore()
-  }, [loadStore])
+    loadStores()
+  }, [loadStores])
+
+  // When selectedStoreId changes, load that store
+  useEffect(() => {
+    if (selectedStoreId) {
+      loadStoreById(selectedStoreId)
+    }
+  }, [selectedStoreId, loadStoreById])
 
   // ---- Save Handlers ----
 
@@ -345,9 +374,46 @@ export default function DashboardPage() {
     )
   }
 
+  if (storesLoading) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-12">
+        <Card>
+          <Skeleton />
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+      {/* Header with store selector */}
+      <div className="flex items-center gap-4">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+        {stores.length > 1 && (
+          <select
+            value={selectedStoreId ?? ""}
+            onChange={(e) => setSelectedStoreId(e.target.value)}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          >
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {stores.length > 1 && store && (
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {store.name}
+          </span>
+        )}
+        <a
+          href="/onboarding"
+          className="ml-auto rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800 transition"
+        >
+          + New Store
+        </a>
+      </div>
 
       {/* Analytics (toast notifications replaced inline messages) */}
       {stats && (

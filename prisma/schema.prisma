@@ -29,7 +29,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
 
-  store         Store?
+  stores        Store[]
   reviews       Review[]
   appointments  Appointment[]
   favoriteStores Store[]       @relation("UserFavorites")
@@ -43,7 +43,7 @@ model Store {
   address             String
   phone               String?
   specialty           String
-  ownerId             String          @unique
+  ownerId             String
   owner               User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   timezone            String          @default("America/Argentina/Buenos_Aires")
   slotDuration        Int             @default(60)
@@ -57,6 +57,8 @@ model Store {
   suspended           Boolean         @default(false)
   calendarSync        CalendarSync?
   favoritedBy         User[]          @relation("UserFavorites")
+
+  @@index([ownerId]) // Multi-store: find stores by owner
 }
 
 model BlockedDate {
