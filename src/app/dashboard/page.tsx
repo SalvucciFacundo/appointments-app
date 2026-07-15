@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, type FormEvent } from "react"
 import Input from "@/components/ui/Input"
 import Button from "@/components/ui/Button"
 import Card from "@/components/ui/Card"
+import { useToast } from "@/components/ui/Toast"
 import {
   getCurrentStore,
   updateStore,
@@ -61,12 +62,13 @@ function Skeleton() {
     </div>
   )
 }
-
 export default function DashboardPage() {
+  const { addToast } = useToast()
+
   const [store, setStore] = useState<StoreData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  // message state replaced by useToast() system
 
   // Editable fields
   const [editName, setEditName] = useState("")
@@ -130,8 +132,7 @@ export default function DashboardPage() {
   }, [])
 
   const showMessage = (type: "success" | "error", text: string) => {
-    setMessage({ type, text })
-    setTimeout(() => setMessage(null), 4000)
+    addToast(text, type)
   }
 
   const loadStore = useCallback(async () => {
@@ -346,19 +347,7 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-12">
       <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
 
-      {message && (
-        <div
-          className={`rounded-md px-4 py-3 text-sm font-medium ${
-            message.type === "success"
-              ? "bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-              : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
-
-      {/* Analytics */}
+      {/* Analytics (toast notifications replaced inline messages) */}
       {stats && (
         <Card title="Appointment Analytics">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">

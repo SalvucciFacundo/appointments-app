@@ -32,6 +32,17 @@ Prioritized portfolio improvements for Appointments-app.
 
 ## Priority 2 — UX & Scale
 
+### 2.0 Toast Notification System
+
+- [ ] Create `src/components/ui/Toast.tsx` — floating notification component with variants (success, error, info, warning)
+- [ ] Create `src/lib/toast.tsx` — React context + provider for global toast state
+- [ ] Integrate into `src/app/layout.tsx` — wrap with ToastProvider
+- [ ] Replace `alert()` / inline error states in dashboard actions (save hours, update settings, confirm/reject appointments)
+- [ ] Replace inline error messages in public booking flow (booking form, review submission)
+- [ ] Show success toast after: booking created, appointment confirmed/cancelled, settings saved, review submitted
+- [ ] Show error toast on: API failures, validation errors, network errors
+- [ ] Auto-dismiss after 4 seconds, manual dismiss button
+
 ### 2.1 Pagination
 
 - [ ] Add cursor/page params to GET /api/stores/public
