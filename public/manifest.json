@@ -1,0 +1,17 @@
+{
+  "name": "Appointments App",
+  "short_name": "Appointments",
+  "description": "SaaS de gestión de turnos para tiendas de servicios",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
