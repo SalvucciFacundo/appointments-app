@@ -9,6 +9,7 @@ import {
 } from "@/lib/appointments"
 import Card from "@/components/ui/Card"
 import Button from "@/components/ui/Button"
+import { useToast } from "@/components/ui/Toast"
 
 interface PendingQueueProps {
   storeId: string
@@ -38,6 +39,7 @@ function buildWaLink(phone: string, name: string, service: string | null, dateTi
 }
 
 export default function PendingQueue({ storeId }: PendingQueueProps) {
+  const { addToast } = useToast()
   const [appointments, setAppointments] = useState<AppointmentData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -66,8 +68,16 @@ export default function PendingQueue({ storeId }: PendingQueueProps) {
       await updateAppointmentStatus(storeId, apt.id, action)
       // Optimistic: remove from queue
       setAppointments((prev) => prev.filter((a) => a.id !== apt.id))
+      addToast(
+        action === "CONFIRM"
+          ? `Appointment confirmed — reminder will be sent`
+          : `Appointment rejected`,
+        "success",
+      )
     } catch (err) {
-      setError((err as ApiError)?.error ?? "Action failed")
+      const msg = (err as ApiError)?.error ?? "Action failed"
+      setError(msg)
+      addToast(msg, "error")
     } finally {
       setActing(null)
     }

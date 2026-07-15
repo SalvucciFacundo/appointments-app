@@ -9,6 +9,7 @@ import {
 } from "@/lib/appointments"
 import Button from "@/components/ui/Button"
 import Input from "@/components/ui/Input"
+import { useToast } from "@/components/ui/Toast"
 
 interface AppointmentDetailProps {
   appointment: AppointmentData | null
@@ -38,6 +39,7 @@ export default function AppointmentDetail({
   onClose,
   onStatusChanged,
 }: AppointmentDetailProps) {
+  const { addToast } = useToast()
   const [acting, setActing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showReschedule, setShowReschedule] = useState(false)
@@ -47,14 +49,23 @@ export default function AppointmentDetail({
 
   if (!appointment) return null
 
+  const actionLabels: Record<string, string> = {
+    CONFIRM: "confirmed",
+    REJECT: "cancelled",
+    COMPLETE: "completed",
+  }
+
   const handleAction = async (action: "CONFIRM" | "REJECT" | "COMPLETE") => {
     setActing(true)
     setError(null)
     try {
       await updateAppointmentStatus(storeId, appointment.id, action)
+      addToast(`Appointment ${actionLabels[action] ?? action.toLowerCase()} successfully`, "success")
       onStatusChanged()
     } catch (err) {
-      setError((err as ApiError)?.error ?? "Action failed")
+      const msg = (err as ApiError)?.error ?? "Action failed"
+      setError(msg)
+      addToast(msg, "error")
     } finally {
       setActing(false)
     }

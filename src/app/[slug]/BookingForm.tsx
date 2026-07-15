@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react"
 import { useState } from "react"
+import { useToast } from "@/components/ui/Toast"
 
 interface SelectedSlot {
   date: string
@@ -16,6 +17,7 @@ interface BookingFormProps {
 
 export default function BookingForm({ slug, selectedSlot }: BookingFormProps) {
   const { data: session } = useSession()
+  const { addToast } = useToast()
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
@@ -66,13 +68,23 @@ export default function BookingForm({ slug, selectedSlot }: BookingFormProps) {
       const body = await res.json()
 
       if (!res.ok) {
-        setError(body.error ?? "Error al reservar el turno")
+        const msg = body.error ?? "Error al reservar el turno"
+        setError(msg)
+        addToast(msg, "error")
         return
       }
 
       setSuccess(true)
+      addToast(
+        session?.user
+          ? "Turno confirmado. Te enviamos los detalles por email."
+          : "Turno solicitado. Te llegará un email con los detalles para confirmar.",
+        "success",
+      )
     } catch {
-      setError("Error de conexión. Intentá de nuevo.")
+      const msg = "Error de conexión. Intentá de nuevo."
+      setError(msg)
+      addToast(msg, "error")
     } finally {
       setSubmitting(false)
     }

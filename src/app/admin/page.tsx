@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useToast } from "@/components/ui/Toast"
 import Card from "@/components/ui/Card"
 
 interface AdminStats {
@@ -58,6 +59,7 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default function AdminPage() {
+  const { addToast } = useToast()
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [stores, setStores] = useState<AdminStore[]>([])
   const [reviews, setReviews] = useState<AdminReview[]>([])
@@ -108,11 +110,21 @@ export default function AdminPage() {
     setActionLoading(storeId)
     try {
       const res = await fetch(`/api/admin/stores/${storeId}`, { method: "PUT" })
-      if (!res.ok) return
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        addToast(body.error ?? "Failed to toggle store status", "error")
+        return
+      }
       const updated = await res.json()
       setStores((prev) =>
         prev.map((s) => (s.id === storeId ? { ...s, suspended: updated.suspended } : s)),
       )
+      addToast(
+        updated.suspended ? "Store suspended" : "Store activated",
+        "success",
+      )
+    } catch {
+      addToast("Network error. Please try again.", "error")
     } finally {
       setActionLoading(null)
     }
@@ -122,9 +134,15 @@ export default function AdminPage() {
     setActionLoading(reviewId)
     try {
       const res = await fetch(`/api/admin/reviews/${reviewId}`, { method: "DELETE" })
-      if (!res.ok) return
+      if (!res.ok) {
+        addToast("Failed to delete review", "error")
+        return
+      }
       setReviews((prev) => prev.filter((r) => r.id !== reviewId))
       setStats((prev) => (prev ? { ...prev, totalReviews: prev.totalReviews - 1 } : prev))
+      addToast("Review deleted", "success")
+    } catch {
+      addToast("Network error. Please try again.", "error")
     } finally {
       setActionLoading(null)
     }

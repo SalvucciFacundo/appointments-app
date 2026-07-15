@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Input from "@/components/ui/Input"
 import Button from "@/components/ui/Button"
 import Card from "@/components/ui/Card"
+import { useToast } from "@/components/ui/Toast"
 
 type FormData = {
   name: string
@@ -45,6 +46,7 @@ function saveDraft(data: FormData) {
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { addToast } = useToast()
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<FormData>(loadDraft)
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -126,6 +128,7 @@ export default function OnboardingPage() {
 
       // Clear draft and redirect
       localStorage.removeItem("onboarding-draft")
+      addToast("Store created successfully! Welcome to your dashboard.", "success")
       router.push("/dashboard")
     } catch {
       setServerError("Network error. Please try again.")
