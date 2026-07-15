@@ -220,6 +220,83 @@ async function main() {
   }
   console.log(`  Appointments: ${appointmentCount}`);
 
+  // === 5. Regular Customer User ===
+
+  const customer = await prisma.user.upsert({
+    where: { email: "customer@test.com" },
+    update: { name: "Cliente Demo", role: Role.USER },
+    create: {
+      email: "customer@test.com",
+      name: "Cliente Demo",
+      role: Role.USER,
+      emailVerified: new Date(),
+    },
+  });
+  console.log(`  Customer: ${customer.email}`);
+
+  // === 6. Reviews (upsert by compound unique [storeId, userId]) ===
+
+  await prisma.review.upsert({
+    where: { storeId_userId: { storeId: store1.id, userId: admin.id } },
+    update: { rating: 5, comment: "Excelente servicio, muy profesionales." },
+    create: {
+      storeId: store1.id,
+      userId: admin.id,
+      rating: 5,
+      comment: "Excelente servicio, muy profesionales.",
+    },
+  });
+  console.log("  Review: admin → Peluquería Central (5★)");
+
+  await prisma.review.upsert({
+    where: { storeId_userId: { storeId: store2.id, userId: admin.id } },
+    update: { rating: 4, comment: "Muy buena atención, un poco caro." },
+    create: {
+      storeId: store2.id,
+      userId: admin.id,
+      rating: 4,
+      comment: "Muy buena atención, un poco caro.",
+    },
+  });
+  console.log("  Review: admin → Veterinaria Norte (4★)");
+
+  await prisma.review.upsert({
+    where: { storeId_userId: { storeId: store1.id, userId: owner2.id } },
+    update: { rating: 4, comment: "Buen corte, espera razonable." },
+    create: {
+      storeId: store1.id,
+      userId: owner2.id,
+      rating: 4,
+      comment: "Buen corte, espera razonable.",
+    },
+  });
+  console.log("  Review: owner2 → Peluquería Central (4★)");
+
+  // === 7. Favorites (customer favorites both stores) ===
+
+  const existingFavorites = await prisma.user.findUnique({
+    where: { id: customer.id },
+    select: { favoriteStores: { select: { id: true } } },
+  });
+
+  const favoritedIds = new Set(existingFavorites?.favoriteStores?.map((s) => s.id) ?? []);
+
+  if (!favoritedIds.has(store1.id) || !favoritedIds.has(store2.id)) {
+    const connectIds: string[] = [];
+    if (!favoritedIds.has(store1.id)) connectIds.push(store1.id);
+    if (!favoritedIds.has(store2.id)) connectIds.push(store2.id);
+
+    await prisma.user.update({
+      where: { id: customer.id },
+      data: {
+        favoriteStores: { connect: connectIds.map((id) => ({ id })) },
+      },
+    });
+    console.log(`  Favorites: customer → ${connectIds.length} stores`);
+  } else {
+    console.log("  Favorites: already set (skipped)");
+  }
+
   console.log("✅ Seed completed successfully.");
 }
 
