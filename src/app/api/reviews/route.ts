@@ -1,5 +1,6 @@
 import { requireAuth } from "@/lib/api-helpers"
 import prisma from "@/lib/prisma"
+import { checkRateLimit, getClientId } from "@/lib/rate-limit"
 
 export async function POST(request: Request) {
   try {
@@ -7,6 +8,21 @@ export async function POST(request: Request) {
     const userId = session.user.id
     if (!userId) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Rate limiting: 10 reviews per minute per user
+    const rateLimit = checkRateLimit(getClientId(request, userId), 10, 60_000)
+    if (!rateLimit.allowed) {
+      return Response.json(
+        { error: "Too many requests. Try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
+            "X-RateLimit-Remaining": "0",
+          },
+        },
+      )
     }
 
     let body: Record<string, unknown>

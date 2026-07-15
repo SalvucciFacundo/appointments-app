@@ -4,6 +4,7 @@ import { getAvailableSlots } from "@/lib/slots"
 import { generateManagementToken, buildManagementUrl } from "@/lib/management-link"
 import { sendConfirmationEmail } from "@/lib/email"
 import { createEvent } from "@/lib/calendar/events"
+import { checkRateLimit, getClientId } from "@/lib/rate-limit"
 
 interface RouteParams {
   params: Promise<{ storeId: string }>
@@ -36,6 +37,24 @@ function getLocalTime(date: Date, timezone: string): string {
 export async function POST(request: Request, { params }: RouteParams) {
   const { storeId: slug } = await params
 
+  // Rate limiting: anonymous = 10/min, authenticated = 30/min
+  const session = await auth().catch(() => null)
+  const clientId = getClientId(request, session?.user?.id)
+  const maxRequests = session?.user?.id ? 30 : 10
+  const rateLimit = checkRateLimit(clientId, maxRequests, 60_000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      { error: "Too many requests. Try again later.", retryAfter: Math.ceil((rateLimit.resetAt - Date.now()) / 1000) },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    )
+  }
+
   let body: Record<string, unknown>
   try {
     body = await request.json()
@@ -44,8 +63,6 @@ export async function POST(request: Request, { params }: RouteParams) {
   }
 
   const { clientName, clientPhone, clientEmail, dateTime, service, notes } = body
-
-  const session = await auth().catch(() => null)
 
   // Validation
   const errors: { field: string; message: string }[] = []
