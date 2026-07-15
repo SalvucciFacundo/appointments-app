@@ -80,6 +80,8 @@ export default function DashboardPage() {
   const [editAddress, setEditAddress] = useState("")
   const [editPhone, setEditPhone] = useState("")
   const [editSpecialty, setEditSpecialty] = useState("")
+  const [editLatitude, setEditLatitude] = useState("")
+  const [editLongitude, setEditLongitude] = useState("")
 
   // Hours
   const [hours, setHours] = useState<BusinessHourInput[]>(
@@ -169,6 +171,8 @@ export default function DashboardPage() {
         setEditAddress(data.address)
         setEditPhone(data.phone ?? "")
         setEditSpecialty(data.specialty)
+        setEditLatitude(data.latitude?.toString() ?? "")
+        setEditLongitude(data.longitude?.toString() ?? "")
         setSlotDuration(data.slotDuration)
         setMaxParallelBookings(data.maxParallelBookings)
         setMaxSlotsPerDay(data.maxSlotsPerDay)
@@ -222,6 +226,8 @@ export default function DashboardPage() {
         address: editAddress.trim(),
         phone: editPhone.trim() || undefined,
         specialty: editSpecialty.trim(),
+        latitude: editLatitude ? parseFloat(editLatitude) : undefined,
+        longitude: editLongitude ? parseFloat(editLongitude) : undefined,
       })
       setStore((prev) => (prev ? { ...prev, ...updated } : prev))
       showMessage("success", "Store info updated")
@@ -467,6 +473,34 @@ export default function DashboardPage() {
             value={editSpecialty}
             onChange={(e) => setEditSpecialty(e.currentTarget.value)}
           />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Latitude (optional)"
+              type="number"
+              step="any"
+              placeholder="-34.6037"
+              value={editLatitude}
+              onChange={(e) => setEditLatitude(e.currentTarget.value)}
+            />
+            <Input
+              label="Longitude (optional)"
+              type="number"
+              step="any"
+              placeholder="-58.3816"
+              value={editLongitude}
+              onChange={(e) => setEditLongitude(e.currentTarget.value)}
+            />
+          </div>
+          {editLatitude && editLongitude && (
+            <a
+              href={`https://www.google.com/maps?q=${editLatitude},${editLongitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+            >
+              📍 View on Google Maps
+            </a>
+          )}
           <Button type="submit" loading={saving === "info"}>
             Save Info
           </Button>

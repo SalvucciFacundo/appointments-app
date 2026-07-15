@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 })
   }
 
-  const { name, description, address, phone, specialty } = body
+  const { name, description, address, phone, specialty, latitude, longitude } = body
 
   // Validate required fields
   const errors: { field: string; message: string }[] = []
@@ -43,6 +43,8 @@ export async function POST(request: Request) {
       description: typeof description === "string" ? description.trim() : null,
       address: (address as string).trim(),
       phone: typeof phone === "string" ? phone.trim() : null,
+      latitude: typeof latitude === "number" ? latitude : null,
+      longitude: typeof longitude === "number" ? longitude : null,
       specialty: (specialty as string).trim(),
       ownerId: session.user.id,
     },

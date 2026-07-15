@@ -42,6 +42,8 @@ model Store {
   description         String?
   address             String
   phone               String?
+  latitude            Float?
+  longitude           Float?
   specialty           String
   ownerId             String
   owner               User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)

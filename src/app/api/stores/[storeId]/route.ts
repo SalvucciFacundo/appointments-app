@@ -40,6 +40,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
       "description",
       "address",
       "phone",
+      "latitude",
+      "longitude",
       "specialty",
       "slotDuration",
       "maxParallelBookings",

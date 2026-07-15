@@ -7,6 +7,8 @@ export interface StoreData {
   description: string | null
   address: string
   phone: string | null
+  latitude: number | null
+  longitude: number | null
   specialty: string
   timezone: string
   slotDuration: number
@@ -43,6 +45,8 @@ export interface UpdateStoreInput {
   description?: string
   address?: string
   phone?: string
+  latitude?: number
+  longitude?: number
   specialty?: string
   slotDuration?: number
   maxParallelBookings?: number
