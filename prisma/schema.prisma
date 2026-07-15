@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  OWNER
+  ADMIN
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String?        @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role           @default(USER)
+  accounts      Account[]
+  sessions      Session[]
+
+  store         Store?
+  reviews       Review[]
+  appointments  Appointment[]
+  favoriteStores Store[]       @relation("UserFavorites")
+}
+
+model Store {
+  id                  String          @id @default(cuid())
+  name                String
+  slug                String          @unique
+  description         String?
+  address             String
+  phone               String?
+  specialty           String
+  ownerId             String          @unique
+  owner               User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  timezone            String          @default("America/Argentina/Buenos_Aires")
+  slotDuration        Int             @default(60)
+  maxParallelBookings Int             @default(1)
+  maxSlotsPerDay      Int             @default(0)
+  cancelationLimit    Int             @default(2)
+  businessHours       BusinessHour[]
+  blockedDates        BlockedDate[]
+  appointments        Appointment[]
+  reviews             Review[]
+  calendarSync        CalendarSync?
+  favoritedBy         User[]          @relation("UserFavorites")
+}
+
+model BlockedDate {
+  id      String   @id @default(cuid())
+  storeId String
+  store   Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  date    DateTime @db.Date
+  reason  String?
+}
+
+model BusinessHour {
+  id        String @id @default(cuid())
+  storeId   String
+  store     Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  dayOfWeek Int
+  openTime  String
+  closeTime String
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  storeId     String
+  store       Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?             @relation(fields: [userId], references: [id])
+  clientName  String
+  clientPhone String
+  clientEmail String
+  dateTime    DateTime
+  service     String?
+  status      AppointmentStatus @default(CONFIRMED)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([storeId, dateTime])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([storeId, userId])
+}
+
+model CalendarSync {
+  id           String   @id @default(cuid())
+  storeId      String   @unique
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  accessToken  String
+  refreshToken String
+  expiryDate   DateTime
+  calendarId   String?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

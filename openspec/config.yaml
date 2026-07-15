@@ -1,0 +1,41 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Next.js (App Router), TypeScript, PostgreSQL + Prisma ORM
+  Auth: Auth.js (NextAuth) with Google Provider
+  Notifications: Resend (email), Meta Cloud API (WhatsApp), Google Calendar API
+  Styling: Vanilla CSS / CSS Modules
+  Architecture: Multitenant SaaS B2B2C — Appointments for service stores
+  Testing: Pre-project (no test runner configured yet)
+  Language: Spanish (openspec docs), English (code artifacts)
+
+strict_tdd: false
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Consider multitenant data isolation
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Account for anonymous vs authenticated user flows
+  design:
+    - Include sequence diagrams for complex flows (booking, notifications)
+    - Document architecture decisions with rationale
+    - Consider timezone handling across stores
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    guidelines:
+      - Follow Next.js App Router conventions
+      - Use Prisma schema as source of truth for data model
+      - Prefer Server Components where possible
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: "next build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
