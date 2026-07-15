@@ -1,6 +1,8 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 import { getAvailableSlots } from "@/lib/slots"
+import { generateManagementToken, buildManagementUrl } from "@/lib/management-link"
+import { sendConfirmationEmail } from "@/lib/email"
 
 interface RouteParams {
   params: Promise<{ storeId: string }>
@@ -118,6 +120,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   // Create appointment
   const isAuthenticated = session?.user?.id != null
+  const managementToken = generateManagementToken()
 
   const appointment = await prisma.appointment.create({
     data: {
@@ -130,7 +133,24 @@ export async function POST(request: Request, { params }: RouteParams) {
       notes: typeof notes === "string" ? notes.trim() || null : null,
       userId: isAuthenticated ? session!.user!.id : null,
       status: isAuthenticated ? "CONFIRMED" : "PENDING",
+      managementToken,
     },
+  })
+
+  // Fire-and-forget confirmation email
+  const managementUrl = isAuthenticated
+    ? undefined
+    : buildManagementUrl(managementToken)
+
+  sendConfirmationEmail({
+    to: appointment.clientEmail,
+    clientName: appointment.clientName,
+    storeName: store.name,
+    dateTime: appointment.dateTime,
+    service: appointment.service,
+    managementUrl,
+  }).catch((err) => {
+    console.error("[book] Failed to send confirmation email:", err)
   })
 
   return Response.json(

@@ -76,20 +76,21 @@ model BusinessHour {
 }
 
 model Appointment {
-  id          String            @id @default(cuid())
-  storeId     String
-  store       Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  userId      String?
-  user        User?             @relation(fields: [userId], references: [id])
-  clientName  String
-  clientPhone String
-  clientEmail String
-  dateTime    DateTime
-  service     String?
-  status      AppointmentStatus @default(CONFIRMED)
-  notes       String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  storeId         String
+  store           Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?             @relation(fields: [userId], references: [id])
+  clientName      String
+  clientPhone     String
+  clientEmail     String
+  dateTime        DateTime
+  service         String?
+  status          AppointmentStatus @default(CONFIRMED)
+  notes           String?
+  managementToken String?           @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@index([storeId, dateTime])
 }

@@ -1,6 +1,8 @@
 import prisma from "@/lib/prisma"
 import { assertOwnerAccess } from "@/lib/api-helpers"
 import type { AppointmentStatus } from "@prisma/client"
+import { sendCancellationEmail } from "@/lib/email"
+import { buildManagementUrl } from "@/lib/management-link"
 
 interface RouteParams {
   params: Promise<{ storeId: string; id: string }>
@@ -80,7 +82,26 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const updated = await prisma.appointment.update({
       where: { id },
       data: { status: targetStatus },
+      include: { store: { select: { name: true } } },
     })
+
+    // Fire-and-forget cancellation email
+    if (targetStatus === "CANCELLED") {
+      const cancelUrl = updated.managementToken
+        ? buildManagementUrl(updated.managementToken)
+        : undefined
+
+      sendCancellationEmail({
+        to: updated.clientEmail,
+        clientName: updated.clientName,
+        storeName: updated.store.name,
+        dateTime: updated.dateTime,
+        service: updated.service,
+        managementUrl: cancelUrl,
+      }).catch((err) => {
+        console.error("[appointments] Failed to send cancellation email:", err)
+      })
+    }
 
     return Response.json({
       id: updated.id,
