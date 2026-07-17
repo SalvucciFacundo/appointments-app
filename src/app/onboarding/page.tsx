@@ -57,7 +57,6 @@ export default function OnboardingPage() {
     const next = { ...form, [key]: value }
     setForm(next)
     saveDraft(next)
-    // Clear field error on input
     if (errors[key]) {
       const nextErrors = { ...errors }
       delete nextErrors[key]
@@ -67,7 +66,6 @@ export default function OnboardingPage() {
 
   const validateStep = (): boolean => {
     const fieldKey = STEPS[step].key as keyof FormData
-    // phone is optional
     if (fieldKey === "phone") return true
 
     const value = form[fieldKey].trim()
@@ -126,7 +124,6 @@ export default function OnboardingPage() {
         return
       }
 
-      // Clear draft and redirect
       localStorage.removeItem("onboarding-draft")
       addToast("Store created successfully! Welcome to your dashboard.", "success")
       router.push("/dashboard")
@@ -141,48 +138,50 @@ export default function OnboardingPage() {
   const isLast = step === STEPS.length - 1
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
-        <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-8">
+      <Card className="w-full max-w-md" padding="lg">
+        <h1 className="mb-1 text-xl font-bold tracking-tight text-[var(--text-primary)]">
           Create Your Store
         </h1>
-        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mb-6 text-xs text-[var(--text-tertiary)]">
           Step {step + 1} of {STEPS.length}: {currentStep.label}
         </p>
 
         {/* Progress bar */}
-        <div className="mb-6 flex gap-1">
+        <div className="mb-6 flex gap-1.5">
           {STEPS.map((_, i) => (
             <div
               key={i}
-              className={`h-1 flex-1 rounded-full ${
-                i <= step ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
+              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                i <= step ? "bg-[var(--accent)]" : "bg-[var(--border-subtle)]"
               }`}
             />
           ))}
         </div>
 
-        <Input
-          label={currentStep.label}
-          placeholder={currentStep.placeholder}
-          value={form[currentStep.key as keyof FormData]}
-          onChange={(e: FormEvent<HTMLInputElement>) =>
-            updateField(currentStep.key as keyof FormData, e.currentTarget.value)
-          }
-          onKeyDown={(e: React.KeyboardEvent) => {
-            if (e.key === "Enter") {
-              e.preventDefault()
-              isLast ? handleSubmit() : handleNext()
+        <div className="min-h-[120px]">
+          <Input
+            label={currentStep.label}
+            placeholder={currentStep.placeholder}
+            value={form[currentStep.key as keyof FormData]}
+            onChange={(e: FormEvent<HTMLInputElement>) =>
+              updateField(currentStep.key as keyof FormData, e.currentTarget.value)
             }
-          }}
-          error={errors[currentStep.key]}
-          className="mb-6"
-        />
+            onKeyDown={(e: React.KeyboardEvent) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                isLast ? handleSubmit() : handleNext()
+              }
+            }}
+            error={errors[currentStep.key]}
+            className="mb-4"
+          />
+        </div>
 
         {serverError && (
-          <p className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
-            {serverError}
-          </p>
+          <div className="mb-4 rounded-[var(--radius-md)] bg-[var(--danger-light)] px-3 py-2">
+            <p className="text-xs text-[var(--danger)]">{serverError}</p>
+          </div>
         )}
 
         <div className="flex gap-3">

@@ -1,50 +1,37 @@
-"use client"
-
 interface StarRatingProps {
   rating: number
-  interactive?: boolean
-  onChange?: (rating: number) => void
+  size?: "sm" | "md"
 }
 
-export default function StarRating({
-  rating,
-  interactive = false,
-  onChange,
-}: StarRatingProps) {
-  const rounded = Math.round(rating)
-  const stars = [1, 2, 3, 4, 5]
+export default function StarRating({ rating, size = "sm" }: StarRatingProps) {
+  const fullStars = Math.floor(rating)
+  const hasHalf = rating % 1 >= 0.5
+  const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0)
+  const starSize = size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4"
 
   return (
-    <div className="inline-flex items-center gap-0.5" role="img" aria-label={`${rating} out of 5 stars`}>
-      {stars.map((star) => {
-        const filled = star <= rounded
-
-        if (interactive && onChange) {
-          return (
-            <button
-              key={star}
-              type="button"
-              className="text-lg leading-none transition-colors focus:outline-none"
-              style={{ color: filled ? "#f59e0b" : "#d1d5db" }}
-              onClick={() => onChange(star)}
-              aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
-            >
-              ★
-            </button>
-          )
-        }
-
-        return (
-          <span
-            key={star}
-            className="text-lg leading-none"
-            style={{ color: filled ? "#f59e0b" : "#d1d5db" }}
-            aria-hidden="true"
-          >
-            ★
-          </span>
-        )
-      })}
-    </div>
+    <span className="inline-flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+      {Array.from({ length: fullStars }).map((_, i) => (
+        <svg key={`full-${i}`} className={`${starSize} text-[var(--warning)]`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ))}
+      {hasHalf && (
+        <svg className={`${starSize} text-[var(--warning)]`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <defs>
+            <linearGradient id="halfStar">
+              <stop offset="50%" stopColor="currentColor" />
+              <stop offset="50%" stopColor="transparent" />
+            </linearGradient>
+          </defs>
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#halfStar)" stroke="currentColor" strokeWidth="1" />
+        </svg>
+      )}
+      {Array.from({ length: emptyStars }).map((_, i) => (
+        <svg key={`empty-${i}`} className={`${starSize} text-[var(--border-default)]`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ))}
+    </span>
   )
 }

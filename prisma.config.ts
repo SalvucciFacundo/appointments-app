@@ -1,4 +1,5 @@
 import { defineConfig } from "prisma/config";
+import process from "process";
 
 export default defineConfig({
   schema: "./prisma/schema.prisma",
@@ -7,6 +8,6 @@ export default defineConfig({
     seed: "npx tsx ./prisma/seed.ts",
   },
   datasource: {
-    url: "postgresql://postgres:facundo1288@localhost:5432/appointments_db",
+    url: "postgresql://appointments_user@localhost:5432/appointments_db",
   },
 });

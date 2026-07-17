@@ -41,15 +41,15 @@ function formatPeakHour(hour: number | null): string {
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center dark:border-gray-600 dark:bg-gray-800">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3 text-center shadow-[var(--shadow-sm)]">
+      <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-tertiary)]">
         {label}
       </p>
-      <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <p className="mt-1 text-xl font-bold text-[var(--text-primary)]">
         {value}
       </p>
       {sub && (
-        <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{sub}</p>
+        <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">{sub}</p>
       )}
     </div>
   )
@@ -58,12 +58,13 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
 function Skeleton() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="h-6 w-48 rounded bg-gray-200 dark:bg-gray-700" />
-      <div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
-      <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
+      <div className="h-6 w-48 skeleton" />
+      <div className="h-4 w-full skeleton" />
+      <div className="h-4 w-3/4 skeleton" />
     </div>
   )
 }
+
 export default function DashboardPage() {
   const { addToast } = useToast()
 
@@ -73,7 +74,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [storesLoading, setStoresLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
-  // message state replaced by useToast() system
 
   // Editable fields
   const [editName, setEditName] = useState("")
@@ -361,7 +361,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12">
+      <div className="mx-auto max-w-3xl px-4 py-8">
         <Card>
           <Skeleton />
         </Card>
@@ -371,9 +371,9 @@ export default function DashboardPage() {
 
   if (!store) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12">
+      <div className="mx-auto max-w-3xl px-4 py-8">
         <Card>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-[var(--text-tertiary)]">
             No store found. Please complete onboarding.
           </p>
         </Card>
@@ -383,7 +383,7 @@ export default function DashboardPage() {
 
   if (storesLoading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12">
+      <div className="mx-auto max-w-3xl px-4 py-8">
         <Card>
           <Skeleton />
         </Card>
@@ -392,40 +392,46 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-12">
+    <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 animate-fadeIn">
       {/* Header with store selector */}
-      <div className="flex items-center gap-4">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
-        {stores.length > 1 && (
-          <select
-            value={selectedStoreId ?? ""}
-            onChange={(e) => setSelectedStoreId(e.target.value)}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
-          >
-            {stores.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        )}
-        {stores.length > 1 && store && (
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {store.name}
-          </span>
-        )}
+      <div className="flex items-center gap-3">
+        <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Dashboard</h1>
+        <div className="flex items-center gap-2">
+          {stores.length > 1 && (
+            <select
+              value={selectedStoreId ?? ""}
+              onChange={(e) => setSelectedStoreId(e.target.value)}
+              className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs
+                text-[var(--text-primary)] hover:border-[var(--border-strong)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-all duration-150"
+            >
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          )}
+          {stores.length > 1 && store && (
+            <span className="text-xs text-[var(--text-tertiary)]">{store.name}</span>
+          )}
+        </div>
         <a
           href="/onboarding"
-          className="ml-auto rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800 transition"
+          className="ml-auto inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-1.5 text-xs font-medium
+            text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]
+            transition-all duration-150"
         >
-          + New Store
+          <svg className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14" /><path d="M12 5v14" />
+          </svg>
+          Nuevo
         </a>
       </div>
 
-      {/* Analytics (toast notifications replaced inline messages) */}
+      {/* Analytics */}
       {stats && (
-        <Card title="Appointment Analytics">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-6">
+        <Card title="📊 Analytics">
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             <StatCard label="Today" value={stats.todayCount} />
             <StatCard label="Total" value={sumTotal(stats.total)} />
             <StatCard label="Completed" value={stats.total["COMPLETED"] ?? 0} />
@@ -434,7 +440,7 @@ export default function DashboardPage() {
             <StatCard label="Peak Hour" value={formatPeakHour(stats.peakHour)} sub={stats.peakHourCount > 0 ? `${stats.peakHourCount} appts` : undefined} />
           </div>
           {stats.repeatCustomers > 0 && (
-            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-3 text-xs text-[var(--text-tertiary)]">
               {stats.repeatCustomers} repeat customer{stats.repeatCustomers !== 1 ? "s" : ""}
             </p>
           )}
@@ -445,78 +451,56 @@ export default function DashboardPage() {
       )}
 
       {/* Store Info */}
-      <Card title="Store Information">
+      <Card title="🏪 Store Information">
         <form onSubmit={handleSaveInfo} className="space-y-4">
           <Input label="Name" value={editName} onChange={(e) => setEditName(e.currentTarget.value)} />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="mb-1.5 block text-sm font-medium text-[var(--text-secondary)]">
               Description (optional)
             </label>
             <textarea
               value={editDescription}
               onChange={(e) => setEditDescription(e.currentTarget.value)}
               rows={2}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                dark:border-gray-600"
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
+                bg-[var(--bg-surface)] text-[var(--text-primary)]
+                placeholder:text-[var(--text-quaternary)]
+                hover:border-[var(--border-strong)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-all duration-150"
             />
           </div>
-          <Input
-            label="Address"
-            value={editAddress}
-            onChange={(e) => setEditAddress(e.currentTarget.value)}
-          />
-          <Input
-            label="Phone (optional)"
-            value={editPhone}
-            onChange={(e) => setEditPhone(e.currentTarget.value)}
-          />
-          <Input
-            label="Specialty"
-            value={editSpecialty}
-            onChange={(e) => setEditSpecialty(e.currentTarget.value)}
-          />
+          <Input label="Address" value={editAddress} onChange={(e) => setEditAddress(e.currentTarget.value)} />
+          <Input label="Phone (optional)" value={editPhone} onChange={(e) => setEditPhone(e.currentTarget.value)} />
+          <Input label="Specialty" value={editSpecialty} onChange={(e) => setEditSpecialty(e.currentTarget.value)} />
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Latitude (optional)"
-              type="number"
-              step="any"
-              placeholder="-34.6037"
-              value={editLatitude}
-              onChange={(e) => setEditLatitude(e.currentTarget.value)}
-            />
-            <Input
-              label="Longitude (optional)"
-              type="number"
-              step="any"
-              placeholder="-58.3816"
-              value={editLongitude}
-              onChange={(e) => setEditLongitude(e.currentTarget.value)}
-            />
+            <Input label="Latitude (optional)" type="number" step="any" placeholder="-34.6037"
+              value={editLatitude} onChange={(e) => setEditLatitude(e.currentTarget.value)} />
+            <Input label="Longitude (optional)" type="number" step="any" placeholder="-58.3816"
+              value={editLongitude} onChange={(e) => setEditLongitude(e.currentTarget.value)} />
           </div>
           {editLatitude && editLongitude && (
-            <a
-              href={`https://www.google.com/maps?q=${editLatitude},${editLongitude}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+            <a href={`https://www.google.com/maps?q=${editLatitude},${editLongitude}`}
+              target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline"
             >
-              📍 View on Google Maps
+              <svg className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              View on Google Maps
             </a>
           )}
-          <Button type="submit" loading={saving === "info"}>
-            Save Info
-          </Button>
+          <Button type="submit" loading={saving === "info"}>Save Info</Button>
         </form>
       </Card>
 
       {/* Business Hours */}
-      <Card title="Business Hours">
-        <div className="space-y-3">
+      <Card title="🕐 Business Hours">
+        <div className="space-y-2">
           {hours.map((h, i) => (
             <div key={h.dayOfWeek} className="flex items-center gap-3">
-              <span className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="w-24 text-sm font-medium text-[var(--text-secondary)]">
                 {DAY_LABELS[h.dayOfWeek]}
               </span>
               <input
@@ -527,10 +511,13 @@ export default function DashboardPage() {
                   next[i] = { ...next[i], openTime: e.target.value }
                   setHours(next)
                 }}
-                className="rounded-md border border-gray-300 px-2 py-1.5 text-sm
-                  dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                className="rounded-[var(--radius-md)] border border-[var(--border-default)] px-2 py-1.5 text-sm
+                  bg-[var(--bg-surface)] text-[var(--text-primary)]
+                  hover:border-[var(--border-strong)]
+                  focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                  transition-all duration-150"
               />
-              <span className="text-sm text-gray-400">to</span>
+              <span className="text-xs text-[var(--text-tertiary)]">to</span>
               <input
                 type="time"
                 value={h.closeTime}
@@ -539,145 +526,119 @@ export default function DashboardPage() {
                   next[i] = { ...next[i], closeTime: e.target.value }
                   setHours(next)
                 }}
-                className="rounded-md border border-gray-300 px-2 py-1.5 text-sm
-                  dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                className="rounded-[var(--radius-md)] border border-[var(--border-default)] px-2 py-1.5 text-sm
+                  bg-[var(--bg-surface)] text-[var(--text-primary)]
+                  hover:border-[var(--border-strong)]
+                  focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                  transition-all duration-150"
               />
             </div>
           ))}
         </div>
-        <Button onClick={handleSaveHours} loading={saving === "hours"} className="mt-4">
+        <Button onClick={handleSaveHours} loading={saving === "hours"} className="mt-4" variant="secondary">
           Save Hours
         </Button>
       </Card>
 
       {/* Slot Settings */}
-      <Card title="Slot Settings">
+      <Card title="⚙️ Slot Settings">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="mb-1.5 block text-sm font-medium text-[var(--text-secondary)]">
               Slot Duration (minutes)
             </label>
-            <input
-              type="number"
-              min={15}
-              step={15}
-              value={slotDuration}
+            <input type="number" min={15} step={15} value={slotDuration}
               onChange={(e) => setSlotDuration(Number(e.target.value))}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm
-                focus:outline-none focus:ring-2 focus:ring-blue-500
-                dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            />
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
+                bg-[var(--bg-surface)] text-[var(--text-primary)]
+                hover:border-[var(--border-strong)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-all duration-150" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Max Parallel Bookings
-            </label>
-            <input
-              type="number"
-              min={1}
-              value={maxParallelBookings}
+            <label className="mb-1.5 block text-sm font-medium text-[var(--text-secondary)]">Max Parallel Bookings</label>
+            <input type="number" min={1} value={maxParallelBookings}
               onChange={(e) => setMaxParallelBookings(Number(e.target.value))}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm
-                focus:outline-none focus:ring-2 focus:ring-blue-500
-                dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            />
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
+                bg-[var(--bg-surface)] text-[var(--text-primary)]
+                hover:border-[var(--border-strong)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-all duration-150" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Max Slots Per Day
-            </label>
-            <input
-              type="number"
-              min={0}
-              value={maxSlotsPerDay}
+            <label className="mb-1.5 block text-sm font-medium text-[var(--text-secondary)]">Max Slots Per Day</label>
+            <input type="number" min={0} value={maxSlotsPerDay}
               onChange={(e) => setMaxSlotsPerDay(Number(e.target.value))}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm
-                focus:outline-none focus:ring-2 focus:ring-blue-500
-                dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            />
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
+                bg-[var(--bg-surface)] text-[var(--text-primary)]
+                hover:border-[var(--border-strong)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-all duration-150" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Cancellation Limit (hours)
-            </label>
-            <input
-              type="number"
-              min={0}
-              value={cancelationLimit}
+            <label className="mb-1.5 block text-sm font-medium text-[var(--text-secondary)]">Cancellation Limit (hours)</label>
+            <input type="number" min={0} value={cancelationLimit}
               onChange={(e) => setCancelationLimit(Number(e.target.value))}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm
-                focus:outline-none focus:ring-2 focus:ring-blue-500
-                dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            />
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
+                bg-[var(--bg-surface)] text-[var(--text-primary)]
+                hover:border-[var(--border-strong)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-all duration-150" />
           </div>
         </div>
-        <Button onClick={handleSaveSlots} loading={saving === "slots"} className="mt-4">
+        <Button onClick={handleSaveSlots} loading={saving === "slots"} className="mt-4" variant="secondary">
           Save Settings
         </Button>
       </Card>
 
       {/* Blocked Dates */}
-      <Card title="Blocked Dates">
+      <Card title="🚫 Blocked Dates">
         <div className="flex flex-wrap gap-3 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Date
-            </label>
-            <input
-              type="date"
-              value={newBlockedDate}
+            <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">Date</label>
+            <input type="date" value={newBlockedDate}
               onChange={(e) => setNewBlockedDate(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm
-                focus:outline-none focus:ring-2 focus:ring-blue-500
-                dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            />
+              className="rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
+                bg-[var(--bg-surface)] text-[var(--text-primary)]
+                hover:border-[var(--border-strong)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-all duration-150" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Reason (optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Holiday"
-              value={newBlockedReason}
+            <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">Reason (optional)</label>
+            <input type="text" placeholder="e.g. Holiday" value={newBlockedReason}
               onChange={(e) => setNewBlockedReason(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm
-                focus:outline-none focus:ring-2 focus:ring-blue-500
-                dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            />
+              className="rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
+                bg-[var(--bg-surface)] text-[var(--text-primary)]
+                placeholder:text-[var(--text-quaternary)]
+                hover:border-[var(--border-strong)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-all duration-150" />
           </div>
           <div className="flex items-end">
-            <Button
-              onClick={handleAddBlockedDate}
-              loading={saving === "blocked"}
-              disabled={!newBlockedDate}
-            >
+            <Button onClick={handleAddBlockedDate} loading={saving === "blocked"} disabled={!newBlockedDate} size="sm">
               Add
             </Button>
           </div>
         </div>
 
         {store.blockedDates.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">No blocked dates</p>
+          <p className="text-xs text-[var(--text-tertiary)]">No blocked dates</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-1.5">
             {store.blockedDates.map((bd) => (
-              <li
-                key={bd.id}
-                className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2
-                  dark:border-gray-700"
+              <li key={bd.id}
+                className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-3 py-2"
               >
-                <span className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-sm text-[var(--text-primary)]">
                   {new Date(bd.date).toLocaleDateString("es-AR")}
                   {bd.reason && (
-                    <span className="ml-2 text-gray-500 dark:text-gray-400">— {bd.reason}</span>
+                    <span className="ml-2 text-xs text-[var(--text-tertiary)]">— {bd.reason}</span>
                   )}
                 </span>
-                <Button
-                  variant="danger"
-                  onClick={() => handleRemoveBlockedDate(bd.id)}
+                <Button variant="ghost" size="sm" onClick={() => handleRemoveBlockedDate(bd.id)}
                   loading={saving === "blocked"}
-                >
+                  className="text-[var(--danger)] hover:text-[var(--danger-hover)]">
                   Remove
                 </Button>
               </li>
@@ -687,70 +648,50 @@ export default function DashboardPage() {
       </Card>
 
       {/* Calendar Sync */}
-      <Card title="Google Calendar Sync">
+      <Card title="📅 Google Calendar Sync">
         {calendarError && (
-          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">
-            <p className="text-sm font-medium text-red-700 dark:text-red-400">
-              ⚠ Sync error
-            </p>
-            <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-              {calendarError}
-            </p>
+          <div className="mb-3 rounded-[var(--radius-md)] bg-[var(--danger-light)] px-3 py-2">
+            <p className="text-xs font-medium text-[var(--danger)]">⚠ Sync error</p>
+            <p className="mt-1 text-xs text-[var(--danger)] opacity-80">{calendarError}</p>
           </div>
         )}
 
         {calendarEnabled ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <span className="inline-flex items-center rounded-full bg-[var(--success-light)] px-2.5 py-0.5 text-xs font-medium text-[var(--success)]">
                 Connected
               </span>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-xs text-[var(--text-tertiary)]">
                 Appointments are synced to Google Calendar
               </span>
             </div>
-            <Button
-              variant="danger"
-              onClick={handleDisconnectCalendar}
-              loading={calendarLoading}
-            >
+            <Button variant="danger" size="sm" onClick={handleDisconnectCalendar} loading={calendarLoading}>
               Disconnect
             </Button>
           </div>
         ) : (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+              <span className="inline-flex items-center rounded-full bg-[var(--bg-muted)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-tertiary)]">
                 Not connected
               </span>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-xs text-[var(--text-tertiary)]">
                 Connect to sync appointments automatically
               </span>
             </div>
-            <Button
-              onClick={handleConnectCalendar}
-              loading={calendarLoading}
-            >
+            <Button size="sm" onClick={handleConnectCalendar} loading={calendarLoading}>
               Connect Google Calendar
             </Button>
           </div>
         )}
       </Card>
 
-      {/* ---- Appointment Sections ---- */}
+      {/* Appointment Sections */}
       <PendingQueue key={`pending-${appointmentRefreshKey}`} storeId={store.id} />
-
-      <TodayAgenda
-        key={`agenda-${appointmentRefreshKey}`}
-        storeId={store.id}
-        onSelectAppointment={setSelectedAppointment}
-      />
-
-      <DayCalendar
-        key={`calendar-${appointmentRefreshKey}`}
-        storeId={store.id}
-        store={store}
-      />
+      <TodayAgenda key={`agenda-${appointmentRefreshKey}`} storeId={store.id}
+        onSelectAppointment={setSelectedAppointment} />
+      <DayCalendar key={`calendar-${appointmentRefreshKey}`} storeId={store.id} store={store} />
 
       {/* Appointment Detail Modal */}
       <AppointmentDetail

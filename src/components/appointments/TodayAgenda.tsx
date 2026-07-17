@@ -1,12 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import {
-  listAppointments,
-  updateAppointmentStatus,
-  type AppointmentData,
-  type ApiError,
-} from "@/lib/appointments"
+import { listAppointments, type AppointmentData, type ApiError } from "@/lib/appointments"
 import Card from "@/components/ui/Card"
 import Button from "@/components/ui/Button"
 
@@ -15,11 +10,11 @@ interface TodayAgendaProps {
   onSelectAppointment?: (apt: AppointmentData) => void
 }
 
-const STATUS_GROUPS: Array<{ status: string; label: string; className: string }> = [
-  { status: "CONFIRMED", label: "Confirmed", className: "border-l-4 border-blue-500" },
-  { status: "PENDING", label: "Pending", className: "border-l-4 border-yellow-500" },
-  { status: "COMPLETED", label: "Completed", className: "border-l-4 border-green-500" },
-  { status: "CANCELLED", label: "Cancelled", className: "border-l-4 border-red-500" },
+const STATUS_GROUPS: Array<{ status: string; label: string; color: string }> = [
+  { status: "CONFIRMED", label: "Confirmed", color: "border-l-[3px] border-l-[var(--info)]" },
+  { status: "PENDING", label: "Pending", color: "border-l-[3px] border-l-[var(--warning)]" },
+  { status: "COMPLETED", label: "Completed", color: "border-l-[3px] border-l-[var(--success)]" },
+  { status: "CANCELLED", label: "Cancelled", color: "border-l-[3px] border-l-[var(--danger)]" },
 ]
 
 function todayStr(): string {
@@ -60,10 +55,10 @@ export default function TodayAgenda({ storeId, onSelectAppointment }: TodayAgend
 
   if (loading) {
     return (
-      <Card title="Today's Agenda">
+      <Card title="📋 Today&apos;s Agenda">
         <div className="animate-pulse space-y-2">
-          <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
-          <div className="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-4 w-3/4 skeleton" />
+          <div className="h-4 w-1/2 skeleton" />
         </div>
       </Card>
     )
@@ -71,9 +66,9 @@ export default function TodayAgenda({ storeId, onSelectAppointment }: TodayAgend
 
   if (error) {
     return (
-      <Card title="Today's Agenda">
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-        <Button variant="secondary" onClick={load} className="mt-2">
+      <Card title="📋 Today&apos;s Agenda">
+        <p className="text-xs text-[var(--danger)]">{error}</p>
+        <Button variant="secondary" onClick={load} className="mt-2" size="sm">
           Retry
         </Button>
       </Card>
@@ -81,9 +76,9 @@ export default function TodayAgenda({ storeId, onSelectAppointment }: TodayAgend
   }
 
   return (
-    <Card title="Today's Agenda">
+    <Card title={`📋 Today&apos;s Agenda (${appointments.length})`}>
       {appointments.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">No appointments today</p>
+        <p className="text-xs text-[var(--text-tertiary)]">No appointments today</p>
       ) : (
         <div className="space-y-4">
           {STATUS_GROUPS.map((group) => {
@@ -91,7 +86,7 @@ export default function TodayAgenda({ storeId, onSelectAppointment }: TodayAgend
             if (!items || items.length === 0) return null
             return (
               <div key={group.status}>
-                <h3 className="mb-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
                   {group.label} ({items.length})
                 </h3>
                 <ul className="space-y-1">
@@ -100,15 +95,16 @@ export default function TodayAgenda({ storeId, onSelectAppointment }: TodayAgend
                       <button
                         type="button"
                         onClick={() => onSelectAppointment?.(apt)}
-                        className={`w-full rounded-md bg-gray-50 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-750 ${group.className}`}
+                        className={`w-full rounded-[var(--radius-md)] bg-[var(--bg-muted)] px-3 py-2 text-left text-sm
+                          transition-all duration-150 hover:bg-[var(--bg-hover)] ${group.color}`}
                       >
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                        <span className="font-medium text-[var(--text-primary)]">
                           {formatTime(apt.dateTime)}
                         </span>
-                        <span className="mx-2 text-gray-400">—</span>
-                        <span className="text-gray-700 dark:text-gray-300">{apt.clientName}</span>
+                        <span className="mx-2 text-[var(--text-tertiary)]">—</span>
+                        <span className="text-[var(--text-secondary)]">{apt.clientName}</span>
                         {apt.service && (
-                          <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                          <span className="ml-2 text-xs text-[var(--text-tertiary)]">
                             {apt.service}
                           </span>
                         )}

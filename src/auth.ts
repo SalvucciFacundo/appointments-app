@@ -1,5 +1,4 @@
 import NextAuth from "next-auth"
-import Google from "next-auth/providers/google"
 import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import prisma from "@/lib/prisma"
@@ -34,6 +33,11 @@ const DEMO_PASSWORD = "demo123"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  trustHost: true,
+  session: { strategy: "jwt" },
+  pages: {
+    signIn: "/login",
+  },
   providers: [
     Credentials({
       name: "Demo",
@@ -62,7 +66,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       },
     }),
-    Google,
   ],
   callbacks: {
     jwt({ token, user }) {
@@ -70,8 +73,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     session({ session, token }) {
-      if (session.user && token.role) {
+      if (session.user) {
         session.user.role = token.role as "USER" | "OWNER" | "ADMIN"
+        // Pass the user ID from the token (stored in sub)
+        if (token.sub) {
+          session.user.id = token.sub
+        }
       }
       return session
     },

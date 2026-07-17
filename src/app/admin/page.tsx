@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useToast } from "@/components/ui/Toast"
 import Card from "@/components/ui/Card"
+import Button from "@/components/ui/Button"
 import Pagination from "@/components/ui/Pagination"
 
 interface AdminStats {
@@ -41,18 +42,16 @@ interface AdminReview {
 
 function MetricCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center dark:border-gray-600 dark:bg-gray-800">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        {label}
-      </p>
-      <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+    <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3 text-center shadow-[var(--shadow-sm)]">
+      <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-tertiary)]">{label}</p>
+      <p className="mt-1 text-xl font-bold text-[var(--text-primary)]">{value}</p>
     </div>
   )
 }
 
 function StarRating({ rating }: { rating: number }) {
   return (
-    <span className="text-yellow-500">
+    <span className="text-[var(--warning)]">
       {"★".repeat(rating)}
       {"☆".repeat(5 - rating)}
     </span>
@@ -122,10 +121,7 @@ export default function AdminPage() {
       setStores((prev) =>
         prev.map((s) => (s.id === storeId ? { ...s, suspended: updated.suspended } : s)),
       )
-      addToast(
-        updated.suspended ? "Store suspended" : "Store activated",
-        "success",
-      )
+      addToast(updated.suspended ? "Store suspended" : "Store activated", "success")
     } catch {
       addToast("Network error. Please try again.", "error")
     } finally {
@@ -153,10 +149,10 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-12">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="space-y-4 animate-pulse">
-          <div className="h-6 w-48 rounded bg-gray-200 dark:bg-gray-700" />
-          <div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-6 w-48 skeleton" />
+          <div className="h-4 w-full skeleton" />
         </div>
       </div>
     )
@@ -164,22 +160,24 @@ export default function AdminPage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-12">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <Card>
-          <p className="text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-sm text-[var(--danger)]">{error}</p>
         </Card>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Admin Panel</h1>
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 animate-fadeIn">
+      <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+        Admin Panel
+      </h1>
 
       {/* Global Metrics */}
       {stats && (
-        <Card title="Global Metrics">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Card title="📊 Global Metrics">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <MetricCard label="Stores" value={stats.totalStores} />
             <MetricCard label="Appointments" value={stats.totalAppointments} />
             <MetricCard label="Users" value={stats.totalUsers} />
@@ -190,131 +188,85 @@ export default function AdminPage() {
 
       {/* Integrations */}
       {integrations && (
-        <Card title="Integrations">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email</p>
-                <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                    integrations.email.configured
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                  }`}
+        <Card title="🔌 Integrations">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {[
+              { label: "Email", data: integrations.email },
+              { label: "WhatsApp", data: integrations.whatsapp },
+              { label: "Cron Reminders", data: integrations.cron },
+              { label: "Google Calendar", data: integrations.googleCalendar },
+            ].map(({ label, data }) => {
+              const isConfigured = typeof data.configured === "boolean" ? data.configured : false
+              return (
+                <div key={label}
+                  className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-muted)] p-3"
                 >
-                  {integrations.email.configured ? "Active" : "Not configured"}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {integrations.email.provider} — {integrations.email.note}
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">WhatsApp</p>
-                <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                  Stub
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {integrations.whatsapp.provider} — {integrations.whatsapp.note}
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Cron Reminders</p>
-                <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                    integrations.cron.configured
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                  }`}
-                >
-                  {integrations.cron.configured ? "Configured" : "Not configured"}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{integrations.cron.note}</p>
-            </div>
-
-            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Google Calendar
-                </p>
-                <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                    integrations.googleCalendar.configured
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                  }`}
-                >
-                  {integrations.googleCalendar.configured ? "Ready" : "Not configured"}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {integrations.googleCalendar.note}
-              </p>
-            </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{label}</p>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                      isConfigured
+                        ? "bg-[var(--success-light)] text-[var(--success)]"
+                        : "bg-[var(--warning-light)] text-[var(--warning)]"
+                    }`}>
+                      {isConfigured ? "Active" : "Not configured"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                    {"provider" in data ? (data as { provider: string }).provider : ""}
+                    {" — "}
+                    {data.note}
+                  </p>
+                </div>
+              )
+            })}
           </div>
         </Card>
       )}
 
       {/* Stores Table */}
-      <Card title="Stores">
+      <Card title="🏪 Stores">
         {stores.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">No stores found.</p>
+          <p className="text-xs text-[var(--text-tertiary)]">No stores found.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">Name</th>
-                  <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">Owner</th>
-                  <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">Specialty</th>
-                  <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">Status</th>
-                  <th className="py-2 font-medium text-gray-600 dark:text-gray-400">Action</th>
+                <tr className="border-b border-[var(--border-subtle)]">
+                  <th className="py-2 pr-4 font-medium text-[var(--text-tertiary)] text-xs uppercase tracking-wide">Name</th>
+                  <th className="py-2 pr-4 font-medium text-[var(--text-tertiary)] text-xs uppercase tracking-wide">Owner</th>
+                  <th className="py-2 pr-4 font-medium text-[var(--text-tertiary)] text-xs uppercase tracking-wide">Specialty</th>
+                  <th className="py-2 pr-4 font-medium text-[var(--text-tertiary)] text-xs uppercase tracking-wide">Status</th>
+                  <th className="py-2 font-medium text-[var(--text-tertiary)] text-xs uppercase tracking-wide">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {stores.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="border-b border-gray-100 dark:border-gray-800"
-                  >
-                    <td className="py-2 pr-4 text-gray-900 dark:text-gray-100">{s.name}</td>
-                    <td className="py-2 pr-4 text-gray-600 dark:text-gray-400">
+                  <tr key={s.id} className="border-b border-[var(--border-subtle)]/50">
+                    <td className="py-2 pr-4 text-sm text-[var(--text-primary)]">{s.name}</td>
+                    <td className="py-2 pr-4 text-xs text-[var(--text-tertiary)]">
                       {s.owner.name ?? s.owner.email ?? "—"}
                     </td>
-                    <td className="py-2 pr-4 text-gray-600 dark:text-gray-400">{s.specialty}</td>
+                    <td className="py-2 pr-4 text-xs text-[var(--text-tertiary)]">{s.specialty}</td>
                     <td className="py-2 pr-4">
                       {s.suspended ? (
-                        <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                        <span className="inline-flex items-center rounded-full bg-[var(--danger-light)] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
                           Suspended
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                        <span className="inline-flex items-center rounded-full bg-[var(--success-light)] px-2 py-0.5 text-xs font-medium text-[var(--success)]">
                           Active
                         </span>
                       )}
                     </td>
                     <td className="py-2">
-                      <button
+                      <Button
+                        variant={s.suspended ? "primary" : "danger"}
+                        size="sm"
                         onClick={() => handleToggleSuspend(s.id)}
-                        disabled={actionLoading === s.id}
-                        className={`rounded px-3 py-1 text-xs font-medium transition ${
-                          s.suspended
-                            ? "bg-green-600 text-white hover:bg-green-700"
-                            : "bg-red-600 text-white hover:bg-red-700"
-                        } disabled:opacity-50`}
+                        loading={actionLoading === s.id}
                       >
-                        {actionLoading === s.id
-                          ? "..."
-                          : s.suspended
-                            ? "Activate"
-                            : "Suspend"}
-                      </button>
+                        {s.suspended ? "Activate" : "Suspend"}
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -323,52 +275,43 @@ export default function AdminPage() {
           </div>
         )}
         {storesTotalPages > 1 && (
-          <Pagination
-            page={storesPage}
-            totalPages={storesTotalPages}
-            onPageChange={(p) => { setStoresPage(p); loadData() }}
-          />
+          <Pagination page={storesPage} totalPages={storesTotalPages}
+            onPageChange={(p) => { setStoresPage(p); loadData() }} />
         )}
       </Card>
 
       {/* Reviews Table */}
-      <Card title="Reviews">
+      <Card title="⭐ Reviews">
         {reviews.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">No reviews found.</p>
+          <p className="text-xs text-[var(--text-tertiary)]">No reviews found.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">Store</th>
-                  <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">User</th>
-                  <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">Rating</th>
-                  <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">Comment</th>
-                  <th className="py-2 font-medium text-gray-600 dark:text-gray-400">Action</th>
+                <tr className="border-b border-[var(--border-subtle)]">
+                  <th className="py-2 pr-4 font-medium text-[var(--text-tertiary)] text-xs uppercase tracking-wide">Store</th>
+                  <th className="py-2 pr-4 font-medium text-[var(--text-tertiary)] text-xs uppercase tracking-wide">User</th>
+                  <th className="py-2 pr-4 font-medium text-[var(--text-tertiary)] text-xs uppercase tracking-wide">Rating</th>
+                  <th className="py-2 pr-4 font-medium text-[var(--text-tertiary)] text-xs uppercase tracking-wide">Comment</th>
+                  <th className="py-2 font-medium text-[var(--text-tertiary)] text-xs uppercase tracking-wide">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {reviews.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-gray-100 dark:border-gray-800"
-                  >
-                    <td className="py-2 pr-4 text-gray-900 dark:text-gray-100">{r.storeName}</td>
-                    <td className="py-2 pr-4 text-gray-600 dark:text-gray-400">{r.userName}</td>
+                  <tr key={r.id} className="border-b border-[var(--border-subtle)]/50">
+                    <td className="py-2 pr-4 text-sm text-[var(--text-primary)]">{r.storeName}</td>
+                    <td className="py-2 pr-4 text-xs text-[var(--text-tertiary)]">{r.userName}</td>
                     <td className="py-2 pr-4">
                       <StarRating rating={r.rating} />
                     </td>
-                    <td className="py-2 pr-4 text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                    <td className="py-2 pr-4 text-xs text-[var(--text-tertiary)] max-w-xs truncate">
                       {r.comment ?? "—"}
                     </td>
                     <td className="py-2">
-                      <button
-                        onClick={() => handleDeleteReview(r.id)}
-                        disabled={actionLoading === r.id}
-                        className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 transition"
-                      >
-                        {actionLoading === r.id ? "..." : "Delete"}
-                      </button>
+                      <Button variant="danger" size="sm" onClick={() => handleDeleteReview(r.id)}
+                        loading={actionLoading === r.id}>
+                        Delete
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -377,11 +320,8 @@ export default function AdminPage() {
           </div>
         )}
         {reviewsTotalPages > 1 && (
-          <Pagination
-            page={reviewsPage}
-            totalPages={reviewsTotalPages}
-            onPageChange={(p) => { setReviewsPage(p); loadData() }}
-          />
+          <Pagination page={reviewsPage} totalPages={reviewsTotalPages}
+            onPageChange={(p) => { setReviewsPage(p); loadData() }} />
         )}
       </Card>
     </div>

@@ -4,17 +4,24 @@ interface CardProps {
   title?: string
   children: ReactNode
   className?: string
+  padding?: "sm" | "md" | "lg"
 }
 
-export default function Card({ title, children, className = "" }: CardProps) {
+const paddingClasses: Record<string, string> = {
+  sm: "p-4",
+  md: "p-6",
+  lg: "p-8",
+}
+
+export default function Card({ title, children, className = "", padding = "md" }: CardProps) {
   return (
     <div
-      className={`rounded-lg border border-gray-200 bg-white p-6 shadow-sm
-        dark:border-gray-700 dark:bg-gray-900
+      className={`rounded-[var(--radius-lg)] bg-[var(--bg-surface)] shadow-[var(--shadow-sm)]
+        ${paddingClasses[padding]}
         ${className}`}
     >
       {title && (
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h2 className="mb-4 text-base font-semibold text-[var(--text-primary)] tracking-tight">
           {title}
         </h2>
       )}
