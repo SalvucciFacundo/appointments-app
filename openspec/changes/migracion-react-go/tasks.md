@@ -63,8 +63,8 @@ Chain strategy: feature-branch-chain
 
 ## Phase 6: Deploy + cleanup
 
-- [ ] 6.1 Crear `backend/Dockerfile` (multi-stage → distroless), `frontend/Dockerfile` + `frontend/nginx.conf` (proxy `/api`) → `docker build` ambos ok
-- [ ] 6.2 Crear `docker-compose.yml` (postgres + backend + frontend) + `.env.example` ×2 → `docker compose up` reachable
-- [ ] 6.3 Reescribir `README.md`; actualizar `AGENTS.md`/`.gitignore` → docs reflejan stack nuevo
-- [ ] 6.4 Eliminar `src/`, `prisma/`, `next.config.ts`, `package*.json`, `tsconfig.json`, `postcss/eslint/vitest` configs → `git status` sin Next.js (D: verificación previa)
-- [ ] 6.5 Push a `SalvucciFacundo/appointments-app` (rama feature/chain)
+- [x] 6.1 Crear `backend/Dockerfile` (multi-stage → distroless), `frontend/Dockerfile` + `frontend/nginx.conf` (proxy `/api`) → `docker build` ambos ok
+- [x] 6.2 Crear `docker-compose.yml` (postgres + backend + frontend) + `.env.example` ×2 → `docker compose up` reachable
+- [x] 6.3 Reescribir `README.md`; actualizar `AGENTS.md`/`.gitignore` → docs reflejan stack nuevo
+- [x] 6.4 Eliminar `src/`, `prisma/`, `next.config.ts`, `package*.json`, `tsconfig.json`, `postcss/eslint/vitest` configs → `git status` sin Next.js (D: verificación previa)
+- [x] 6.5 Push a `SalvucciFacundo/appointments-app` (rama feature/chain)
