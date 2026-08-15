@@ -1,180 +1,149 @@
 # Appointments App — SaaS Booking Platform
 
-A multitenant SaaS appointment scheduling platform for service-based businesses (hair salons, veterinary clinics, aesthetics, etc.). Built with Next.js 16 App Router, PostgreSQL, and Prisma.
+Plataforma multitenant de reservas de turnos para comercios de servicio (peluquerías, veterinarias, estéticas, etc.). Monorepo de dos aplicaciones independientes: un backend REST en Go y un frontend SPA en React, con PostgreSQL compartido.
 
-## Architecture Overview
+> Migración: el monolito original Next.js 16 + Prisma + Auth.js fue reemplazado por este stack (ver `openspec/changes/migracion-react-go/`). Todo el stack Next.js fue eliminado del repo.
 
-```
-┌─────────────────────────────────────────────────────┐
-│                   Client Layer                       │
-│  Landing (RSC)  │  Store Page  │  Dashboard/Owner   │
-│  /perfil        │  /admin      │  /onboarding        │
-└──────────────┬──────────────────────────────────────┘
-               │ HTTP / Server Components
-┌──────────────▼──────────────────────────────────────┐
-│               API Layer (Route Handlers)             │
-│  Stores CRUD  │  Appointments │  Auth (Auth.js v5)  │
-│  Calendar     │  Notifications│  Admin               │
-└──────────────┬──────────────────────────────────────┘
-               │ Prisma ORM
-┌──────────────▼──────────────────────────────────────┐
-│              PostgreSQL (via Prisma v7)               │
-│  12 models: User, Store, Appointment, Review, ...    │
-└─────────────────────────────────────────────────────┘
-```
+## Stack
 
-## Tech Stack
+| Capa | Tecnología | Detalle |
+|------|-----------|---------|
+| **Frontend** | React 19 + Vite + TypeScript + Tailwind CSS v4 + react-router | SPA estática, se sirve con nginx |
+| **Backend** | Go 1.26 + chi + pgx | REST API con auth stub por API key |
+| **Database** | PostgreSQL 18 + goose | Migraciones SQL versionadas |
+| **Auth** | API key estática (`X-API-Key`) | Stub, reemplazable por OAuth sin cambiar el contrato del frontend |
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Framework** | Next.js 16 (App Router) | SSR, RSC, file-based routing, Turbopack |
-| **Language** | TypeScript | Full-stack type safety |
-| **Database** | PostgreSQL + Prisma v7 | ORM with migrations, driver adapters |
-| **Auth** | Auth.js v5 (NextAuth) | Google OAuth, JWT session strategy, PrismaAdapter |
-| **Email** | Resend | Transactional emails via API |
-| **Calendar** | Google Calendar API v3 | One-way event sync for owners |
-| **WhatsApp** | Meta Cloud API (stub) | WABA-ready notification channel |
-| **Styling** | CSS Modules + Tailwind CSS | Utility-first + dark mode |
-
-## Key Features
-
-### Role-Based Access
-- **Anonymous**: Browse stores, view availability
-- **Authenticated (USER)**: Book instantly (CONFIRMED), manage history, favorites, reviews
-- **Owner (OWNER)**: Full dashboard — store config, schedule management, PENDING queue
-- **Admin (ADMIN)**: Global panel — store oversight, review moderation, integration status
-
-### Booking System
-- Slot-based availability computed from business hours, blocked dates, parallel capacity, and daily limits
-- Timezone-aware: each store has an IANA timezone; all times stored in UTC
-- `getAvailableSlots()` — pure function reusable across owner reschedule and public booking
-
-### Owner Dashboard
-- Store configuration: business hours, slot duration, parallel capacity, blocked dates
-- Appointment management: confirm, cancel, complete, reschedule (with slot validation)
-- Day-view calendar with status-colored time blocks
-- PENDING queue with wa.me contact links
-- Analytics: totals by status, attendance rate, peak hours, repeat customers
-
-### Notification System
-- **Email (Resend)**: Confirmation on booking, cancellation notice, cron-driven reminders
-- **Management tokens**: `crypto.randomUUID()` per appointment for anonymous self-service
-- **WhatsApp stub**: Architecture-ready for Meta Cloud API activation
-- **Cron endpoint**: `/api/cron/reminders` (Bearer auth) — triggers reminders 1 hour before
-
-### Google Calendar Sync
-- Separate OAuth2 client (not coupled to Auth.js login)
-- Owners opt-in from dashboard; each store has its own token pair
-- Auto-refresh with 5-minute expiry buffer
-- Create event on CONFIRMED, update on reschedule, delete on cancellation
-
-### Public Landing
-- Server Component with search/filter by specialty
-- Store cards with average rating (Prisma aggregation)
-- Dynamic slot calendar and auth-optional booking form
-- Customer profile: appointment history, favorites, reviews
-
-### Admin Panel
-- Global metrics: stores, appointments, users, reviews
-- Store management: list, suspend/activate
-- Review moderation: delete offensive content
-- Integration status dashboard: Resend, WhatsApp, Cron, Google Calendar
-
-## Data Model (12 models + 2 enums)
+## Estructura del monorepo
 
 ```
-User ──1:1── Store ──1:N── Appointment
-  │                 ├── BusinessHour
-  │                 ├── BlockedDate
-  │                 └── CalendarSync (1:1)
-  │
-  ├── Review (unique per store+user)
-  ├── FavoriteStores (M:N via relation table)
-  ├── Account (Auth.js)
-  ├── Session (Auth.js)
-  └── VerificationToken (Auth.js)
+.
+├── backend/               # API Go
+│   ├── cmd/api/           # entrypoint
+│   ├── internal/
+│   │   ├── config/        # env: DATABASE_URL, PORT, API_KEY, CORS_ORIGINS, APP_URL
+│   │   ├── store/         # queries pgx parametrizadas (sin SQL interpolado)
+│   │   ├── service/       # lógica pura (slots, state machine, validators) + tests
+│   │   └── http/          # router chi + middleware (cors, logging, recover, ratelimit, requireapikey)
+│   ├── migrations/        # goose SQL (00001_init.up/down.sql)
+│   ├── Makefile           # run/build/test/vet/lint/migrate-up/migrate-down
+│   ├── Dockerfile         # multi-stage: golang → distroless
+│   └── .env.example
+├── frontend/              # SPA Vite React 19
+│   ├── src/api/           # cliente HTTP (base /api, X-API-Key en dashboard)
+│   ├── src/pages/         # Home, StoreDetail, Dashboard
+│   ├── src/components/    # UI + appointments (PendingQueue, DayCalendar, agenda)
+│   ├── Dockerfile         # multi-stage: node → nginx
+│   ├── nginx.conf         # template: SPA fallback + proxy /api → backend
+│   └── .env.example
+├── docker-compose.yml     # stack local: postgres + backend + frontend
+├── openspec/              # SDD: specs y cambios (incluye migracion-react-go)
+└── sdd/                   # SDD: propuestas y diseños
 ```
 
-Key constraints:
-- `@@index([storeId, dateTime])` on Appointment — powers all schedule queries
-- `@@unique([storeId, userId])` on Review — one review per customer per store
-- `managementToken String? @unique` — anonymous booking management
-- `googleEventId String?` — Calendar event tracking
+## Requisitos
 
-## Getting Started
+- Docker + Docker Compose v2 (recomendado para correr el stack completo)
+- Go 1.26+ y Node.js 22+ (solo para desarrollo fuera de Docker)
+- `make` (targets del backend)
 
-### Prerequisites
-- Node.js 24+
-- PostgreSQL 18+
-- Google OAuth credentials (for Auth.js + Calendar)
+## Correr en dev
 
-### Environment Variables
-
-```env
-# Database
-DATABASE_URL="postgresql://user:pass@localhost:5432/appointments_db"
-
-# Auth.js (Google OAuth)
-AUTH_SECRET="your-secret"
-GOOGLE_CLIENT_ID="your-client-id"
-GOOGLE_CLIENT_SECRET="your-client-secret"
-
-# Email (Resend)
-RESEND_API_KEY="re_..."
-
-# Google Calendar (separate OAuth client)
-GOOGLE_CALENDAR_CLIENT_ID="your-calendar-client-id"
-GOOGLE_CALENDAR_CLIENT_SECRET="your-calendar-client-secret"
-
-# Cron
-CRON_SECRET="your-cron-secret"
-APP_URL="http://localhost:3000"
-EMAIL_FROM="notificaciones@appointments.app"
-```
-
-### Install & Run
+### Opción A — Docker Compose (recomendado)
 
 ```bash
+docker compose up --build -d
+cd backend && make tools && make migrate-up   # primera vez: instala goose y aplica migraciones
+```
+
+- Frontend: http://localhost:3000 (nginx, proxy `/api` → backend)
+- Backend: http://localhost:8080 (`/health`, `/api/*`)
+- PostgreSQL: localhost:5432 (user/pass/db: `postgres`/`postgres`/`appointments`)
+
+`make migrate-up` corre desde el host contra `localhost:5432` porque el servicio `postgres` publica el puerto. En un entorno nuevo la tabla `goose_db_version` se crea sola al migrar.
+
+### Opción B — Sin Docker
+
+```bash
+# Terminal 1 — backend
+cd backend
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/appointments?sslmode=disable
+make migrate-up && make run
+
+# Terminal 2 — frontend (Vite proxya /api → localhost:8080)
+cd frontend
 npm install
-npx prisma db push
-npx prisma db seed
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Abrí http://localhost:5173.
 
-### Seed Data
+## Migraciones
 
-| Entity | Count | Notes |
-|--------|-------|-------|
-| Admin | `admin@appointments.app` | ADMIN role |
-| Owners | 2 | Each with a store |
-| Stores | 2 | Peluquería Central, Veterinaria Norte |
-| Business Hours | 12 | Mon–Sat 09:00–18:00 |
-| Appointments | 18 | Mixed statuses for testing |
+Backend usa [goose](https://github.com/pressly/goose) (`backend/migrations/`):
+
+```bash
+cd backend
+make tools          # instala goose una vez
+make migrate-up     # aplica pendientes
+make migrate-down   # revierte la última
+```
+
+Las migraciones se aplican contra `DATABASE_URL` (default: `postgres://postgres:postgres@localhost:5432/appointments?sslmode=disable`). En producción se aplican una vez durante el deploy; no hay migración de datos desde el stack viejo (DB nueva).
+
+## Variables de entorno
+
+### backend (`.env.example`)
+
+| Variable | Default | Descripción |
+|----------|---------|-------------|
+| `DATABASE_URL` | `postgres://postgres:postgres@localhost:5432/appointments?sslmode=disable` | Cadena de conexión pgx |
+| `PORT` | `8080` | Puerto HTTP |
+| `API_KEY` | vacío | API key del dashboard (stub). Vacío = rutas owner sin protección |
+| `OWNER_ID` | `dashboard-owner` | Owner fijo del dashboard de un solo dueño (stub) |
+| `CORS_ORIGINS` | `http://localhost:5173` | Orígenes CORS separados por coma |
+| `APP_URL` | `http://localhost:5173` | URL pública del frontend |
+
+### frontend (`.env.example`)
+
+| Variable | Default | Descripción |
+|----------|---------|-------------|
+| `VITE_API_URL` | vacío | Base de la API. Vacío = relativo `/api` (proxyeado por Vite en dev, por nginx en prod) |
+
+`VITE_API_URL` se compila en el build: cambiarla requiere recompilar la imagen.
+
+## Despliegue en Dokploy
+
+Dos aplicaciones + un PostgreSQL compartido. No hay datos del stack viejo que migrar.
+
+1. **PostgreSQL** — servicio (o base existente) con usuario/contraseña propios. Crear la DB, ej. `appointments`.
+2. **Aplicación `backend`** — build del Dockerfile de `backend/`. Env:
+   - `DATABASE_URL=postgres://<user>:<pass>@<postgres-host>:5432/appointments?sslmode=disable`
+   - `API_KEY=<secret>` — **obligatoria en producción**: sin ella las rutas owner quedan sin protección
+   - `CORS_ORIGINS=https://<dominio-frontend>`
+   - `APP_URL=https://<dominio-frontend>`
+   - `OWNER_ID` (opcional, default `dashboard-owner`)
+   - Aplicar migraciones una vez: `goose -dir migrations postgres "$DATABASE_URL" up` (o un job de migración)
+3. **Aplicación `frontend`** — build del Dockerfile de `frontend/`, dominio con TLS. El nginx embebido sirve el SPA y proxya `/api` → `backend` (por defecto `backend:8080`, configurable con `BACKEND_UPSTREAM`). Dokploy también permite configurar el proxy a nivel de aplicación, pero el nginx embebido es el default y funciona sin pasos extra.
+
+### Nota sobre la API key stub
+
+El dashboard autentica con una `X-API-Key` estática (`API_KEY`). Es un stub deliberado para no arrastrar el flujo OAuth del stack viejo: el contrato con el frontend ya está definido (`Authorization: Bearer` o `X-API-Key`), así que migrar a JWT/OAuth real no requiere tocar el cliente. No expongas `API_KEY` en variables de build del frontend; se manda desde el navegador en los requests del dashboard.
+
+## Verificación rápida
+
+```bash
+curl http://localhost:8080/health        # {"status":"ok",...}
+curl http://localhost:3000/              # HTML del SPA
+curl http://localhost:3000/api/health    # a través del proxy nginx
+```
 
 ## SDD Development Process
 
-All features were developed using **Spec-Driven Development (SDD)**: each change went through exploration → proposal → spec → design → tasks → apply → verify → archive. Artifacts are preserved in `openspec/specs/` and `openspec/changes/archive/`.
+El proyecto se desarrolla con Spec-Driven Development (SDD). Artefactos en `openspec/` (specs + cambios, incluyendo `migracion-react-go`) y `sdd/`. Ver `openspec.md` y `tasks.md`.
 
-### Change History
+## Mejoras futuras
 
-| # | Change | Scope |
-|---|--------|-------|
-| 1 | `inicializacion-db` | Next.js scaffold, Prisma schema, seed |
-| 2 | `auth-roles` | Auth.js v5, Google OAuth, proxy.ts route protection |
-| 3 | `owner-portal` | Onboarding, dashboard, store config, hours, blocked dates |
-| 4 | `owner-appointments` | Appointment CRUD, status machine, PENDING queue, day calendar |
-| 5 | `public-booking` | Landing, store detail, booking flow, customer profile |
-| 6 | `notifications` | Resend email, management tokens, cron reminders, WhatsApp stub |
-| 7 | `google-calendar-sync` | OAuth2, event CRUD, dashboard toggle |
-| 8 | `admin-analytics` | Owner stats, admin panel, store suspension, review moderation |
-
-## Future Improvements
-
-- [ ] Test suite (Vitest) — currently verified via `tsc --noEmit` + `next build`
-- [ ] WhatsApp real integration (Meta WABA setup + template approval)
-- [ ] Two-way Google Calendar sync (webhook for external changes)
-- [ ] Pagination for stores, appointments, and reviews
-- [ ] Rate limiting on anonymous booking
-- [ ] Interactive charts (Recharts) for analytics
+- [ ] CI del stack nuevo (Go build/test/vet + frontend build/test en GitHub Actions)
+- [ ] OAuth real para el dashboard (reemplazo del stub de API key)
+- [ ] Rate limiting y paginación en el API Go
+- [ ] Two-way Google Calendar sync
