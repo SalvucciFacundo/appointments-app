@@ -10,12 +10,12 @@
 | Chained PRs recommended | Yes |
 | Suggested split | PR 1 → PR 7 (cadena feature-branch) |
 | Delivery strategy | ask-on-risk |
-| Chain strategy | pending |
+| Chain strategy | feature-branch-chain |
 
 ```text
-Decision needed before apply: Yes
+Decision needed before apply: No (resolved: chained PRs, feature-branch-chain, budget 800)
 Chained PRs recommended: Yes
-Chain strategy: pending
+Chain strategy: feature-branch-chain
 400-line budget risk: High
 ```
 
@@ -45,8 +45,8 @@ Chain strategy: pending
 
 ## Phase 3: Booking + state machine
 
-- [ ] 3.1 RED→GREEN `internal/service/state_machine.go` + tests (transiciones, terminales, action case-insensitive, `field="action"`) → `go test -run StateMachine`
-- [ ] 3.2 RED→GREEN `internal/service/booking.go` (tx + `SELECT ... FOR UPDATE` store; revalidar slot) + `booking_test.go` (10 goroutines, 1 slot → 1×201, 9×409) → `go test -race -run Book` (D: 2.3)
+- [x] 3.1 RED→GREEN `internal/service/state_machine.go` + tests (transiciones, terminales, action case-insensitive, `field="action"`) → `go test -run StateMachine`
+- [x] 3.2 RED→GREEN `internal/service/booking.go` (tx + `SELECT ... FOR UPDATE` store; revalidar slot) + `booking_test.go` (10 goroutines, 1 slot → 1×201, 9×409) → `go test -race -run Book` (D: 2.3)
 
 ## Phase 4: HTTP API
 
