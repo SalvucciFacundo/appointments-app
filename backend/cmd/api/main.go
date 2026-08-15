@@ -1,8 +1,7 @@
 // Command api is the entrypoint for the appointments backend REST API.
 //
-// Wiring order follows the architecture: config -> pool -> router -> server,
-// with graceful shutdown. The full HTTP surface (middleware, store, service)
-// is layered in during later work units; for now it boots with a health check.
+// Wiring order follows the architecture: config -> pool -> store -> service ->
+// router -> server, with graceful shutdown.
 package main
 
 import (
@@ -15,10 +14,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/salvuccifacundo/appointments-app/backend/internal/config"
+	apihttp "github.com/salvuccifacundo/appointments-app/backend/internal/http"
+	"github.com/salvuccifacundo/appointments-app/backend/internal/service"
+	"github.com/salvuccifacundo/appointments-app/backend/internal/store"
 )
 
 func main() {
@@ -40,12 +41,9 @@ func run() error {
 	}
 	defer pool.Close()
 
-	r := chi.NewRouter()
-	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
-	})
+	db := store.New(pool)
+	svc := service.NewService(db)
+	r := apihttp.NewRouter(cfg, svc)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
