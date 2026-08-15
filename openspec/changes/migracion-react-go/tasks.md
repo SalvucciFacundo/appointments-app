@@ -50,9 +50,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 4: HTTP API
 
-- [ ] 4.1 Crear `internal/http/middleware/*.go` (cors, logging, recover, ratelimit 10/30 rpm + Retry-After, requireapikey) → tests 429 anónimo, 401 sin key
-- [ ] 4.2 Crear `internal/http/router.go` + error contract `{"error":{code,message,field}}` → httptest `/health` 200, 404 slug, 409 `slot_unavailable`
-- [ ] 4.3 Crear handlers owner `stores.go`, `hours.go` (reemplazo tx), `blocked_dates.go` (solo futuro), `appointments.go` (GET/POST, PUT action, reschedule excluyéndose) → httptest 400 `field="action"`, 404 cross-store (D: 3.1)
+- [x] 4.1 Crear `internal/http/middleware/*.go` (cors, logging, recover, ratelimit 10/30 rpm + Retry-After, requireapikey) → tests 429 anónimo, 401 sin key
+- [x] 4.2 Crear `internal/http/router.go` + error contract `{"error":{code,message,field}}` → httptest `/health` 200, 404 slug, 409 `slot_unavailable`
+- [x] 4.3 Crear handlers owner `stores.go`, `hours.go` (reemplazo tx), `blocked_dates.go` (solo futuro), `appointments.go` (GET/POST, PUT action, reschedule excluyéndose) → httptest 400 `field="action"`, 404 cross-store (D: 3.1)
 
 ## Phase 5: Frontend SPA
 
