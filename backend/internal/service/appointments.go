@@ -10,7 +10,8 @@ import (
 
 // CreateAppointmentInput is the owner payload for manually creating an
 // appointment. Date/Time are interpreted in the store's timezone; an empty
-// Status defaults to CONFIRMED.
+// Status defaults to CONFIRMED. Availability is validated unless Force is set
+// (explicit owner override, mirroring the original owner portal behavior).
 type CreateAppointmentInput struct {
 	Date        string
 	Time        string
@@ -20,6 +21,7 @@ type CreateAppointmentInput struct {
 	Service     string
 	Notes       string
 	Status      store.AppointmentStatus
+	Force       bool
 }
 
 // ListAppointments returns a store's appointments, optionally filtered by
@@ -55,8 +57,9 @@ func (s *Service) ListAppointments(ctx context.Context, storeID, date string, st
 }
 
 // CreateAppointment manually creates an appointment (status defaults to
-// CONFIRMED). Availability is intentionally not enforced for manual creation,
-// mirroring the original owner portal behavior.
+// CONFIRMED). Availability is validated against business hours, blocked dates,
+// and capacity unless the owner explicitly overrides with Force, in which case
+// the appointment is created regardless (409 otherwise via ErrSlotUnavailable).
 func (s *Service) CreateAppointment(ctx context.Context, storeID string, in CreateAppointmentInput) (store.Appointment, error) {
 	if err := validateManualCreateInput(in); err != nil {
 		return store.Appointment{}, err
@@ -72,6 +75,36 @@ func (s *Service) CreateAppointment(ctx context.Context, storeID string, in Crea
 		return store.Appointment{}, err
 	}
 	dateTime := time.Date(d.Year(), d.Month(), d.Day(), tm.Hour(), tm.Minute(), 0, 0, loc).UTC()
+
+	if !in.Force {
+		hours, err := s.db.ListBusinessHours(ctx, storeID)
+		if err != nil {
+			return store.Appointment{}, err
+		}
+		blocked, err := s.db.ListBlockedDates(ctx, storeID)
+		if err != nil {
+			return store.Appointment{}, err
+		}
+		start, end := localDayWindow(loc, d)
+		existing, err := s.db.AppointmentsInWindow(ctx, storeID, start, end)
+		if err != nil {
+			return store.Appointment{}, err
+		}
+		available, err := slotIsAvailable(SlotStoreInput{
+			Timezone:            st.Timezone,
+			SlotDuration:        st.SlotDuration,
+			MaxParallelBookings: st.MaxParallelBookings,
+			MaxSlotsPerDay:      st.MaxSlotsPerDay,
+			BusinessHours:       hours,
+			BlockedDates:        blocked,
+		}, in.Date, in.Time, existing)
+		if err != nil {
+			return store.Appointment{}, err
+		}
+		if !available {
+			return store.Appointment{}, ErrSlotUnavailable
+		}
+	}
 
 	status := in.Status
 	if status == "" {

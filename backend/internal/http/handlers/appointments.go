@@ -29,7 +29,8 @@ func (h *Handlers) ListAppointments(w http.ResponseWriter, r *http.Request) {
 }
 
 // createAppointmentBody is the owner manual-create payload. Status defaults
-// to CONFIRMED when omitted.
+// to CONFIRMED when omitted; force skips the availability validation (explicit
+// owner override).
 type createAppointmentBody struct {
 	Date        string `json:"date"`
 	Time        string `json:"time"`
@@ -39,6 +40,7 @@ type createAppointmentBody struct {
 	Service     string `json:"service,omitempty"`
 	Notes       string `json:"notes,omitempty"`
 	Status      string `json:"status,omitempty"`
+	Force       bool   `json:"force,omitempty"`
 }
 
 // CreateAppointment handles POST /api/stores/{id}/appointments (owner manual
@@ -58,6 +60,7 @@ func (h *Handlers) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		Service:     body.Service,
 		Notes:       body.Notes,
 		Status:      store.AppointmentStatus(body.Status),
+		Force:       body.Force,
 	}
 	appt, err := h.svc.CreateAppointment(r.Context(), chi.URLParam(r, "id"), in)
 	if err != nil {

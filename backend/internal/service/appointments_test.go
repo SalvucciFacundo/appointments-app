@@ -3,10 +3,70 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/salvuccifacundo/appointments-app/backend/internal/store"
 )
+
+// manualInput builds a valid manual-create payload for the single Monday
+// 09:00-10:00 slot installed by newTestStore.
+func manualInput(i int) CreateAppointmentInput {
+	return CreateAppointmentInput{
+		Date:        testDate,
+		Time:        "09:00",
+		ClientName:  fmt.Sprintf("Client %d", i),
+		ClientPhone: fmt.Sprintf("555-00%02d", i),
+		ClientEmail: fmt.Sprintf("client%d@example.com", i),
+	}
+}
+
+func TestCreateAppointment_ValidatesAvailabilityUnlessForce(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	db := store.New(pool)
+	svc := NewService(db)
+	st := newTestStore(t, ctx, db)
+
+	// Fill the only 09:00-10:00 slot through the public booking path.
+	if _, err := svc.Book(ctx, st.Slug, bookingInput(1)); err != nil {
+		t.Fatalf("Book: %v", err)
+	}
+
+	// Without force the occupied slot is rejected.
+	_, err := svc.CreateAppointment(ctx, st.ID, manualInput(2))
+	if !errors.Is(err, ErrSlotUnavailable) {
+		t.Errorf("CreateAppointment(occupied slot) error = %v, want ErrSlotUnavailable", err)
+	}
+
+	// With force the owner override wins and the appointment is created.
+	in := manualInput(2)
+	in.Force = true
+	appt, err := svc.CreateAppointment(ctx, st.ID, in)
+	if err != nil {
+		t.Fatalf("CreateAppointment(force): %v", err)
+	}
+	if appt.Status != store.StatusConfirmed {
+		t.Errorf("status = %s, want CONFIRMED", appt.Status)
+	}
+}
+
+func TestCreateAppointment_AvailableSlotPassesValidation(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	db := store.New(pool)
+	svc := NewService(db)
+	st := newTestStore(t, ctx, db)
+
+	// Empty slot, no force → validation passes and the appointment is created.
+	appt, err := svc.CreateAppointment(ctx, st.ID, manualInput(1))
+	if err != nil {
+		t.Fatalf("CreateAppointment: %v", err)
+	}
+	if appt.Status != store.StatusConfirmed {
+		t.Errorf("status = %s, want CONFIRMED", appt.Status)
+	}
+}
 
 func TestCreateBlockedDate_PastDateRejected(t *testing.T) {
 	// Validation runs before any DB access, so a nil-backed service suffices.
