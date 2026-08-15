@@ -19,9 +19,9 @@ type Service interface {
 	GetSlots(ctx context.Context, slug, date string) ([]service.TimeSlot, error)
 	Book(ctx context.Context, slug string, in service.BookInput) (*store.Appointment, error)
 
-	ListStoresByOwner(ctx context.Context, ownerID string) ([]store.Store, error)
+	ListStoresByOwner(ctx context.Context, ownerID string) ([]store.StoreDetail, error)
 	CreateStore(ctx context.Context, ownerID string, in store.CreateStoreInput) (store.Store, error)
-	GetStore(ctx context.Context, id string) (store.Store, []store.BusinessHour, []store.BlockedDate, error)
+	GetStore(ctx context.Context, id string) (store.StoreDetail, error)
 	UpdateStore(ctx context.Context, id string, in store.UpdateStoreInput) (store.Store, error)
 
 	ReplaceBusinessHours(ctx context.Context, storeID string, in []store.BusinessHourInput) ([]store.BusinessHour, error)

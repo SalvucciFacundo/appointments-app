@@ -72,6 +72,14 @@ type Store struct {
 	Suspended           bool     `json:"suspended"`
 }
 
+// StoreDetail is a store together with its business hours and blocked dates,
+// the shape the owner dashboard consumes for the store list and detail.
+type StoreDetail struct {
+	Store
+	BusinessHours []BusinessHour `json:"businessHours"`
+	BlockedDates  []BlockedDate  `json:"blockedDates"`
+}
+
 // BusinessHour is a single weekly opening window (day_of_week, HH:MM).
 type BusinessHour struct {
 	ID        string `json:"id"`

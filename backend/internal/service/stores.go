@@ -40,9 +40,27 @@ func (s *Service) GetPublicStore(ctx context.Context, slug string) (store.Store,
 	return st, hours, nil
 }
 
-// ListStoresByOwner returns all stores owned by ownerID.
-func (s *Service) ListStoresByOwner(ctx context.Context, ownerID string) ([]store.Store, error) {
-	return s.db.ListStoresByOwner(ctx, ownerID)
+// ListStoresByOwner returns all stores owned by ownerID with their business
+// hours and blocked dates embedded. The owner has few stores, so per-store
+// lookups are acceptable here.
+func (s *Service) ListStoresByOwner(ctx context.Context, ownerID string) ([]store.StoreDetail, error) {
+	stores, err := s.db.ListStoresByOwner(ctx, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]store.StoreDetail, 0, len(stores))
+	for _, st := range stores {
+		hours, err := s.db.ListBusinessHours(ctx, st.ID)
+		if err != nil {
+			return nil, err
+		}
+		blocked, err := s.db.ListBlockedDates(ctx, st.ID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, store.StoreDetail{Store: st, BusinessHours: hours, BlockedDates: blocked})
+	}
+	return out, nil
 }
 
 // CreateStore validates the input, ensures the owner user row exists, resolves
@@ -87,20 +105,20 @@ func (s *Service) CreateStore(ctx context.Context, ownerID string, in store.Crea
 }
 
 // GetStore returns a store by id with its business hours and blocked dates.
-func (s *Service) GetStore(ctx context.Context, id string) (store.Store, []store.BusinessHour, []store.BlockedDate, error) {
+func (s *Service) GetStore(ctx context.Context, id string) (store.StoreDetail, error) {
 	st, err := s.db.GetStoreByID(ctx, id)
 	if err != nil {
-		return store.Store{}, nil, nil, notFoundIfNoRows(err)
+		return store.StoreDetail{}, notFoundIfNoRows(err)
 	}
 	hours, err := s.db.ListBusinessHours(ctx, id)
 	if err != nil {
-		return store.Store{}, nil, nil, err
+		return store.StoreDetail{}, err
 	}
 	blocked, err := s.db.ListBlockedDates(ctx, id)
 	if err != nil {
-		return store.Store{}, nil, nil, err
+		return store.StoreDetail{}, err
 	}
-	return st, hours, blocked, nil
+	return store.StoreDetail{Store: st, BusinessHours: hours, BlockedDates: blocked}, nil
 }
 
 // UpdateStore applies a partial update to the store with the given id.

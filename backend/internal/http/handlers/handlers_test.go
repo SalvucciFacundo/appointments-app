@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/salvuccifacundo/appointments-app/backend/internal/config"
 	apihttp "github.com/salvuccifacundo/appointments-app/backend/internal/http"
@@ -30,9 +31,9 @@ type fakeService struct {
 	getPublicStore          func(ctx context.Context, slug string) (store.Store, []store.BusinessHour, error)
 	getSlots                func(ctx context.Context, slug, date string) ([]service.TimeSlot, error)
 	book                    func(ctx context.Context, slug string, in service.BookInput) (*store.Appointment, error)
-	listStoresByOwner       func(ctx context.Context, ownerID string) ([]store.Store, error)
+	listStoresByOwner       func(ctx context.Context, ownerID string) ([]store.StoreDetail, error)
 	createStore             func(ctx context.Context, ownerID string, in store.CreateStoreInput) (store.Store, error)
-	getStore                func(ctx context.Context, id string) (store.Store, []store.BusinessHour, []store.BlockedDate, error)
+	getStore                func(ctx context.Context, id string) (store.StoreDetail, error)
 	updateStore             func(ctx context.Context, id string, in store.UpdateStoreInput) (store.Store, error)
 	replaceBusinessHours    func(ctx context.Context, storeID string, in []store.BusinessHourInput) ([]store.BusinessHour, error)
 	createBlockedDate       func(ctx context.Context, storeID, date, reason string) (store.BlockedDate, error)
@@ -71,7 +72,7 @@ func (f *fakeService) Book(ctx context.Context, slug string, in service.BookInpu
 	return nil, nil
 }
 
-func (f *fakeService) ListStoresByOwner(ctx context.Context, ownerID string) ([]store.Store, error) {
+func (f *fakeService) ListStoresByOwner(ctx context.Context, ownerID string) ([]store.StoreDetail, error) {
 	if f.listStoresByOwner != nil {
 		return f.listStoresByOwner(ctx, ownerID)
 	}
@@ -85,11 +86,11 @@ func (f *fakeService) CreateStore(ctx context.Context, ownerID string, in store.
 	return store.Store{}, nil
 }
 
-func (f *fakeService) GetStore(ctx context.Context, id string) (store.Store, []store.BusinessHour, []store.BlockedDate, error) {
+func (f *fakeService) GetStore(ctx context.Context, id string) (store.StoreDetail, error) {
 	if f.getStore != nil {
 		return f.getStore(ctx, id)
 	}
-	return store.Store{}, nil, nil, nil
+	return store.StoreDetail{}, nil
 }
 
 func (f *fakeService) UpdateStore(ctx context.Context, id string, in store.UpdateStoreInput) (store.Store, error) {
@@ -388,11 +389,11 @@ func TestOwnerRoute_RequiresAPIKey(t *testing.T) {
 
 func TestOwnerRoute_AllowsValidKey(t *testing.T) {
 	f := &fakeService{}
-	f.listStoresByOwner = func(_ context.Context, ownerID string) ([]store.Store, error) {
+	f.listStoresByOwner = func(_ context.Context, ownerID string) ([]store.StoreDetail, error) {
 		if ownerID != "owner-1" {
 			t.Errorf("ownerID = %q, want owner-1", ownerID)
 		}
-		return []store.Store{}, nil
+		return []store.StoreDetail{}, nil
 	}
 	h := newTestRouter(t, f)
 	rr := doRequest(t, h, http.MethodGet, "/api/stores", "")
@@ -424,5 +425,46 @@ func TestCreateStore_Success(t *testing.T) {
 	}
 	if got.Slug != "clinica" {
 		t.Errorf("slug = %q, want clinica", got.Slug)
+	}
+}
+
+func TestListOwnerStores_EmbedsHoursAndBlocked(t *testing.T) {
+	f := &fakeService{}
+	f.listStoresByOwner = func(_ context.Context, ownerID string) ([]store.StoreDetail, error) {
+		if ownerID != "owner-1" {
+			t.Errorf("ownerID = %q, want owner-1", ownerID)
+		}
+		return []store.StoreDetail{
+			{
+				Store: store.Store{ID: "s1", Name: "Clínica", Slug: "clinica", Specialty: "General", Address: "Av 1"},
+				BusinessHours: []store.BusinessHour{
+					{ID: "h1", StoreID: "s1", DayOfWeek: 1, OpenTime: "09:00", CloseTime: "18:00"},
+				},
+				BlockedDates: []store.BlockedDate{
+					{ID: "b1", StoreID: "s1", Date: store.Date(time.Now().AddDate(0, 0, 1))},
+				},
+			},
+		}, nil
+	}
+	h := newTestRouter(t, f)
+	rr := doRequest(t, h, http.MethodGet, "/api/stores", "")
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status %d, want 200", rr.Code)
+	}
+	var body []map[string]any
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if len(body) != 1 {
+		t.Fatalf("len(body) = %d, want 1", len(body))
+	}
+	if body[0]["slug"] != "clinica" {
+		t.Errorf("slug = %v, want clinica", body[0]["slug"])
+	}
+	if hours, ok := body[0]["businessHours"].([]any); !ok || len(hours) != 1 {
+		t.Errorf("businessHours = %v, want embedded array of len 1", body[0]["businessHours"])
+	}
+	if blocked, ok := body[0]["blockedDates"].([]any); !ok || len(blocked) != 1 {
+		t.Errorf("blockedDates = %v, want embedded array of len 1", body[0]["blockedDates"])
 	}
 }

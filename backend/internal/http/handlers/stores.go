@@ -36,13 +36,6 @@ type publicStoreDetail struct {
 	ReviewCount   int                  `json:"reviewCount"`
 }
 
-// storeDetail is the owner view of a store including hours and blocked dates.
-type storeDetail struct {
-	store.Store
-	BusinessHours []store.BusinessHour `json:"businessHours"`
-	BlockedDates  []store.BlockedDate  `json:"blockedDates"`
-}
-
 // createStoreBody is the allowed create payload (slug is server-generated).
 type createStoreBody struct {
 	Name        string   `json:"name"`
@@ -150,12 +143,12 @@ func (h *Handlers) CreateStore(w http.ResponseWriter, r *http.Request) {
 
 // GetStore handles GET /api/stores/{id} (owner).
 func (h *Handlers) GetStore(w http.ResponseWriter, r *http.Request) {
-	st, hours, blocked, err := h.svc.GetStore(r.Context(), chi.URLParam(r, "id"))
+	detail, err := h.svc.GetStore(r.Context(), chi.URLParam(r, "id"))
 	if err != nil {
 		respondError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, storeDetail{Store: st, BusinessHours: hours, BlockedDates: blocked})
+	writeJSON(w, http.StatusOK, detail)
 }
 
 // UpdateStore handles PUT /api/stores/{id} (owner) applying an allowlist of
