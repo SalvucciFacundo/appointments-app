@@ -16,6 +16,9 @@ type Config struct {
 	// APIKey is the static dashboard API key (auth stub).
 	// Empty means owner routes are not protected — set it in production.
 	APIKey string
+	// OwnerID is the fixed owner id for the single-owner dashboard (auth stub).
+	// The owner user row is created lazily on the first store creation.
+	OwnerID string
 	// CORSOrigins is the list of allowed browser origins.
 	CORSOrigins []string
 	// APPURL is the public base URL of the SPA frontend.
@@ -25,6 +28,7 @@ type Config struct {
 const (
 	defaultDatabaseURL = "postgres://postgres:postgres@localhost:5432/appointments?sslmode=disable"
 	defaultPort        = "8080"
+	defaultOwnerID     = "dashboard-owner"
 	defaultCORSOrigins = "http://localhost:5173"
 	defaultAPPURL      = "http://localhost:5173"
 )
@@ -35,6 +39,7 @@ func Load() *Config {
 		DatabaseURL: getenv("DATABASE_URL", defaultDatabaseURL),
 		Port:        getenv("PORT", defaultPort),
 		APIKey:      os.Getenv("API_KEY"),
+		OwnerID:     getenv("OWNER_ID", defaultOwnerID),
 		CORSOrigins: splitCSV(getenv("CORS_ORIGINS", defaultCORSOrigins)),
 		APPURL:      getenv("APP_URL", defaultAPPURL),
 	}

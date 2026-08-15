@@ -48,15 +48,29 @@ func scanAppointment(row pgx.Row) (Appointment, error) {
 // AppointmentsInWindow returns appointments for a store whose date_time falls
 // in the half-open UTC window [start, end).
 func (db *DB) AppointmentsInWindow(ctx context.Context, storeID string, start, end time.Time) ([]Appointment, error) {
-	return appointmentsInWindow(ctx, db.pool, storeID, start, end)
+	return appointmentsInWindow(ctx, db.pool, storeID, start, end, "")
+}
+
+// AppointmentsInWindowExcluding is AppointmentsInWindow minus the appointment
+// with the given id (used by reschedule so the appointment does not count
+// against its own capacity).
+func (db *DB) AppointmentsInWindowExcluding(ctx context.Context, storeID string, start, end time.Time, excludeID string) ([]Appointment, error) {
+	return appointmentsInWindow(ctx, db.pool, storeID, start, end, excludeID)
 }
 
 // appointmentsInWindow reads through the given querier (pool or tx).
-func appointmentsInWindow(ctx context.Context, q querier, storeID string, start, end time.Time) ([]Appointment, error) {
-	rows, err := q.Query(ctx, `SELECT `+appointmentColumns+`
+func appointmentsInWindow(ctx context.Context, q querier, storeID string, start, end time.Time, excludeID string) ([]Appointment, error) {
+	query := `SELECT ` + appointmentColumns + `
 		FROM appointments
-		WHERE store_id = $1 AND date_time >= $2 AND date_time < $3
-		ORDER BY date_time`, storeID, start, end)
+		WHERE store_id = $1 AND date_time >= $2 AND date_time < $3`
+	args := []any{storeID, start, end}
+	if excludeID != "" {
+		query += ` AND id <> $4`
+		args = append(args, excludeID)
+	}
+	query += ` ORDER BY date_time`
+
+	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +91,13 @@ func appointmentsInWindow(ctx context.Context, q querier, storeID string, start,
 // returns it.
 func (db *DB) CreateAppointment(ctx context.Context, in CreateAppointmentInput) (Appointment, error) {
 	return createAppointment(ctx, db.pool, in)
+}
+
+// GetAppointmentByID returns the appointment with the given id, or
+// pgx.ErrNoRows.
+func (db *DB) GetAppointmentByID(ctx context.Context, id string) (Appointment, error) {
+	row := db.pool.QueryRow(ctx, `SELECT `+appointmentColumns+` FROM appointments WHERE id = $1`, id)
+	return scanAppointment(row)
 }
 
 // createAppointment inserts through the given querier (pool or tx).

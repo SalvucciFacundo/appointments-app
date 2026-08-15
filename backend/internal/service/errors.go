@@ -1,6 +1,10 @@
 package service
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/jackc/pgx/v5"
+)
 
 // FieldError is an input validation error tied to a request field. The HTTP
 // layer maps it to 400 with the {code, message, field} contract.
@@ -31,3 +35,12 @@ var ErrSlotUnavailable = &ConflictError{
 
 // ErrNotFound is returned when a store is not found by slug. It maps to 404.
 var ErrNotFound = errors.New("not found")
+
+// notFoundIfNoRows translates pgx.ErrNoRows into ErrNotFound so the HTTP layer
+// can map both "store missing" and "appointment missing" to a single 404.
+func notFoundIfNoRows(err error) error {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	}
+	return err
+}

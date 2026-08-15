@@ -19,7 +19,7 @@ func LockStoreBySlugForUpdate(ctx context.Context, tx pgx.Tx, slug string) (Stor
 // AppointmentsInWindowTx mirrors AppointmentsInWindow but reads through an
 // open transaction so it observes the state after the store lock is held.
 func AppointmentsInWindowTx(ctx context.Context, tx pgx.Tx, storeID string, start, end time.Time) ([]Appointment, error) {
-	return appointmentsInWindow(ctx, tx, storeID, start, end)
+	return appointmentsInWindow(ctx, tx, storeID, start, end, "")
 }
 
 // CreateAppointmentTx mirrors CreateAppointment but inserts through an open

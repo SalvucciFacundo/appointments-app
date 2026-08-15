@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"time"
 	_ "time/tzdata" // embed tzdata so LoadLocation works on distroless images
@@ -126,6 +127,44 @@ func AvailableSlots(s SlotStoreInput, date string, existing []store.Appointment)
 		})
 	}
 	return slots, nil
+}
+
+// GetSlots computes the available slots for a store on a given date by wiring
+// the pure AvailableSlots function to the database.
+func (s *Service) GetSlots(ctx context.Context, slug, date string) ([]TimeSlot, error) {
+	st, err := s.db.GetStoreBySlug(ctx, slug)
+	if err != nil {
+		return nil, notFoundIfNoRows(err)
+	}
+	d, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return nil, &FieldError{Field: "date", Message: "date must be in YYYY-MM-DD format"}
+	}
+	loc, err := loadLocation(st.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	hours, err := s.db.ListBusinessHours(ctx, st.ID)
+	if err != nil {
+		return nil, err
+	}
+	blocked, err := s.db.ListBlockedDates(ctx, st.ID)
+	if err != nil {
+		return nil, err
+	}
+	start, end := localDayWindow(loc, d)
+	existing, err := s.db.AppointmentsInWindow(ctx, st.ID, start, end)
+	if err != nil {
+		return nil, err
+	}
+	return AvailableSlots(SlotStoreInput{
+		Timezone:            st.Timezone,
+		SlotDuration:        st.SlotDuration,
+		MaxParallelBookings: st.MaxParallelBookings,
+		MaxSlotsPerDay:      st.MaxSlotsPerDay,
+		BusinessHours:       hours,
+		BlockedDates:        blocked,
+	}, date, existing)
 }
 
 // localDayWindow returns the half-open UTC window [start, end) covering the

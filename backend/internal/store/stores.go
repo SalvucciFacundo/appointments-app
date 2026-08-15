@@ -129,6 +129,16 @@ func (db *DB) SlugExists(ctx context.Context, slug string) (bool, error) {
 	return exists, err
 }
 
+// EnsureOwnerUser idempotently inserts the dashboard owner user row. The
+// API-key auth stub has no user registry, so store creation would otherwise
+// fail on the owner_id foreign key.
+func (db *DB) EnsureOwnerUser(ctx context.Context, id string) error {
+	_, err := db.pool.Exec(ctx, `
+		INSERT INTO users (id, name, email) VALUES ($1, $2, $3)
+		ON CONFLICT (id) DO NOTHING`, id, "Dashboard Owner", id+"@localhost")
+	return err
+}
+
 // CreateStore inserts a new store (generating its UUID v4 id) and returns it.
 func (db *DB) CreateStore(ctx context.Context, in CreateStoreInput) (Store, error) {
 	id := uuid.NewString()
