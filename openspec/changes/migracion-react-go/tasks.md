@@ -39,9 +39,9 @@ Chain strategy: pending
 
 ## Phase 2: Store + business logic pura
 
-- [ ] 2.1 Crear `internal/store/store.go` (pgxpool + structs) y `{stores,appointments,hours,blocked_dates}.go` (queries parametrizadas; list público con q ILIKE; window local en SQL) → `go vet ./...`
-- [ ] 2.2 Portar `internal/service/{validators,slug,pagination}.go` desde `src/lib/*.ts` + tests → verdes
-- [ ] 2.3 RED→GREEN `internal/service/slots.go` + `slots_test.go` (8 slots 09-17, blocked date, CANCELLED no ocupa, COMPLETED ocupa, maxSlotsPerDay, DST con AddDate) → `go test -run Slots`
+- [x] 2.1 Crear `internal/store/store.go` (pgxpool + structs) y `{stores,appointments,hours,blocked_dates}.go` (queries parametrizadas; list público con q ILIKE; window local en SQL) → `go vet ./...`
+- [x] 2.2 Portar `internal/service/{validators,slug,pagination}.go` desde `src/lib/*.ts` + tests → verdes
+- [x] 2.3 RED→GREEN `internal/service/slots.go` + `slots_test.go` (8 slots 09-17, blocked date, CANCELLED no ocupa, COMPLETED ocupa, maxSlotsPerDay, DST con AddDate) → `go test -run Slots`
 
 ## Phase 3: Booking + state machine
 
