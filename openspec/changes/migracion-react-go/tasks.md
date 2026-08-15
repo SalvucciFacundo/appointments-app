@@ -33,9 +33,9 @@ Chain strategy: pending
 
 ## Phase 1: Foundation (backend skeleton + DB)
 
-- [ ] 1.1 Crear `backend/go.mod` + `cmd/api/main.go` + `internal/config/config.go` (env DATABASE_URL/PORT/API_KEY/CORS_ORIGINS/APP_URL) → `go build ./...`
-- [ ] 1.2 Crear `backend/migrations/00001_init.{up,down}.sql` (enum + users/stores/business_hours/blocked_dates/appointments + índices) → `goose up` produce schema = `prisma db push`; down revierte
-- [ ] 1.3 Crear `backend/Makefile` (run/build/test/migrate) + `.golangci.yml` → `make test`, lint ok
+- [x] 1.1 Crear `backend/go.mod` + `cmd/api/main.go` + `internal/config/config.go` (env DATABASE_URL/PORT/API_KEY/CORS_ORIGINS/APP_URL) → `go build ./...`
+- [x] 1.2 Crear `backend/migrations/00001_init.{up,down}.sql` (enum + users/stores/business_hours/blocked_dates/appointments + índices) → `goose up` produce schema = `prisma db push`; down revierte
+- [x] 1.3 Crear `backend/Makefile` (run/build/test/migrate) + `.golangci.yml` → `make test`, lint ok
 
 ## Phase 2: Store + business logic pura
 
