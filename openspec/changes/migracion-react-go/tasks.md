@@ -56,10 +56,10 @@ Chain strategy: feature-branch-chain
 
 ## Phase 5: Frontend SPA
 
-- [ ] 5.1 Scaffold `frontend/` (React 19, vite.config.ts proxy `/api`, react-router, index.html meta) → `npm run build` produce dist/
-- [ ] 5.2 Crear `frontend/src/api/{client,stores,appointments}.ts` (ports de `src/lib/*.ts`; X-API-Key en dashboard) → build ok
-- [ ] 5.3 Portar `components/ui/*` + `components/appointments/*` + `globals.css` (next/link → react-router) → build + vitest smoke
-- [ ] 5.4 Crear `pages/{Home,StoreDetail,Dashboard}.tsx` (fetch en useEffect, sin RSC; PendingQueue/DayCalendar/agenda) → build + vitest
+- [x] 5.1 Scaffold `frontend/` (React 19, vite.config.ts proxy `/api`, react-router, index.html meta) → `npm run build` produce dist/
+- [x] 5.2 Crear `frontend/src/api/{client,stores,appointments}.ts` (ports de `src/lib/*.ts`; X-API-Key en dashboard) → build ok
+- [x] 5.3 Portar `components/ui/*` + `components/appointments/*` + `globals.css` (next/link → react-router) → build + vitest smoke
+- [x] 5.4 Crear `pages/{Home,StoreDetail,Dashboard}.tsx` (fetch en useEffect, sin RSC; PendingQueue/DayCalendar/agenda) → build + vitest
 
 ## Phase 6: Deploy + cleanup
 
