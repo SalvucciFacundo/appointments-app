@@ -48,7 +48,12 @@ func scanAppointment(row pgx.Row) (Appointment, error) {
 // AppointmentsInWindow returns appointments for a store whose date_time falls
 // in the half-open UTC window [start, end).
 func (db *DB) AppointmentsInWindow(ctx context.Context, storeID string, start, end time.Time) ([]Appointment, error) {
-	rows, err := db.pool.Query(ctx, `SELECT `+appointmentColumns+`
+	return appointmentsInWindow(ctx, db.pool, storeID, start, end)
+}
+
+// appointmentsInWindow reads through the given querier (pool or tx).
+func appointmentsInWindow(ctx context.Context, q querier, storeID string, start, end time.Time) ([]Appointment, error) {
+	rows, err := q.Query(ctx, `SELECT `+appointmentColumns+`
 		FROM appointments
 		WHERE store_id = $1 AND date_time >= $2 AND date_time < $3
 		ORDER BY date_time`, storeID, start, end)
@@ -71,8 +76,13 @@ func (db *DB) AppointmentsInWindow(ctx context.Context, storeID string, start, e
 // CreateAppointment inserts a new appointment (generating its UUID v4 id) and
 // returns it.
 func (db *DB) CreateAppointment(ctx context.Context, in CreateAppointmentInput) (Appointment, error) {
+	return createAppointment(ctx, db.pool, in)
+}
+
+// createAppointment inserts through the given querier (pool or tx).
+func createAppointment(ctx context.Context, q querier, in CreateAppointmentInput) (Appointment, error) {
 	id := uuid.NewString()
-	row := db.pool.QueryRow(ctx, `
+	row := q.QueryRow(ctx, `
 		INSERT INTO appointments (id, store_id, client_name, client_phone,
 			client_email, date_time, service, status, notes, management_token)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

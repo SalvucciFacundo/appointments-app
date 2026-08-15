@@ -36,7 +36,12 @@ func (db *DB) DeleteBlockedDate(ctx context.Context, id string) error {
 
 // ListBlockedDates returns all blocked dates for a store, ordered by date.
 func (db *DB) ListBlockedDates(ctx context.Context, storeID string) ([]BlockedDate, error) {
-	rows, err := db.pool.Query(ctx, `
+	return listBlockedDates(ctx, db.pool, storeID)
+}
+
+// listBlockedDates reads through the given querier (pool or tx).
+func listBlockedDates(ctx context.Context, q querier, storeID string) ([]BlockedDate, error) {
+	rows, err := q.Query(ctx, `
 		SELECT id, store_id, date, reason
 		FROM blocked_dates WHERE store_id = $1 ORDER BY date`, storeID)
 	if err != nil {

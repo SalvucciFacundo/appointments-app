@@ -55,7 +55,12 @@ func (db *DB) ReplaceBusinessHours(ctx context.Context, storeID string, in []Bus
 // ListBusinessHours returns all business hours for a store, ordered by
 // day_of_week.
 func (db *DB) ListBusinessHours(ctx context.Context, storeID string) ([]BusinessHour, error) {
-	rows, err := db.pool.Query(ctx, `
+	return listBusinessHours(ctx, db.pool, storeID)
+}
+
+// listBusinessHours reads through the given querier (pool or tx).
+func listBusinessHours(ctx context.Context, q querier, storeID string) ([]BusinessHour, error) {
+	rows, err := q.Query(ctx, `
 		SELECT id, store_id, day_of_week, open_time, close_time
 		FROM business_hours WHERE store_id = $1 ORDER BY day_of_week`, storeID)
 	if err != nil {

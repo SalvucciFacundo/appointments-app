@@ -7,12 +7,23 @@ import (
 	"context"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // DB wraps the pgx connection pool and owns all SQL for the service.
 type DB struct {
 	pool *pgxpool.Pool
+}
+
+// querier is the subset of pgx operations the store needs. Both
+// *pgxpool.Pool and pgx.Tx satisfy it, so the same query functions run
+// against the pool or inside a transaction (booking path).
+type querier interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 }
 
 // New creates a DB backed by the given connection pool.
