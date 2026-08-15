@@ -1,62 +1,50 @@
 # Spec: store-booking
 
-## ADDED Requirements
+## MODIFIED Requirements
 
-### Requirement: Store detail page
+### Requirement: Public store detail via API
 
-The store page (`/[slug]`) SHALL display:
-- Store name, description, address, phone, specialty
-- Business hours for each day of the week
-- An interactive slot calendar for selecting a date and viewing available slots
+The store detail page SHALL fetch `GET /api/stores/public/{slug}` and display name, description, address, phone, specialty, timezone, and business hours.
 
-The store info section SHALL be a Server Component. The slot calendar and booking form SHALL be Client Components.
+#### Scenario: Store page renders from API
 
-#### Scenario: Store page renders store information
-
-- **Given** a store with slug "mi-clinica" exists with business hours Mon-Fri 09:00-18:00
+- **Given** a store with slug "mi-clinica" exists
 - **When** a user visits `/mi-clinica`
-- **Then** the page SHALL display the store name, address, specialty, and business hours
+- **Then** the page SHALL render the store info and business hours fetched from the API
 
 #### Scenario: Non-existent slug returns 404
 
 - **Given** no store with slug "inexistente" exists
-- **When** a user visits `/inexistente`
-- **Then** the page SHALL return a 404 Not Found response
+- **When** a user requests `GET /api/stores/public/inexistente`
+- **Then** the API SHALL return `404`
 
----
+### Requirement: Booking with date+time contract
 
-### Requirement: Booking creates appointment with correct status
+The SPA SHALL send `{date: "YYYY-MM-DD", time: "HH:MM", clientName, clientPhone, clientEmail, service?, notes?}` to `POST /api/stores/{slug}/book`. The backend SHALL interpret date/time in the store's timezone. Without authentication, the appointment SHALL be created with status `PENDING` and a generated `managementToken`.
 
-The booking endpoint SHALL create an appointment with status determined by authentication:
-- Authenticated user (valid session) → status `CONFIRMED`, `userId` linked
-- Anonymous user (no session) → status `PENDING`, `clientEmail` stored
+#### Scenario: Anonymous user books an available slot
 
-#### Scenario: Authenticated user books a slot
+- **Given** an anonymous user
+- **When** they submit a valid booking for an available slot
+- **Then** the API SHALL return `201` with the appointment
+- **And** the appointment status SHALL be `PENDING`
+- **And** a `managementToken` SHALL be generated
 
-- **Given** an authenticated user with a valid session
-- **When** they submit a booking for an available slot
-- **Then** an appointment SHALL be created with status `CONFIRMED`
-- **And** the `userId` field SHALL be set to the authenticated user's ID
+#### Scenario: Booking an unavailable slot returns 409
 
-#### Scenario: Anonymous user books a slot
+- **Given** a slot at max capacity
+- **When** a user books that exact slot
+- **Then** the API SHALL return `409` with `error.code = "slot_unavailable"`
 
-- **Given** an anonymous user (no session)
-- **When** they submit a booking with name, phone, and email for an available slot
-- **Then** an appointment SHALL be created with status `PENDING`
-- **And** the `clientEmail` field SHALL be stored
-- **And** the `userId` field SHALL be null
+#### Scenario: Booking is atomic under concurrency
 
----
+- **Given** one slot with `maxParallelBookings = 1`
+- **When** two clients book the same slot concurrently
+- **Then** exactly one request SHALL succeed with `201` and the other SHALL return `409`
 
-### Requirement: Available slots computation
+### Requirement: Available slots computed in Go
 
-Available slots SHALL be computed using the store's:
-- Timezone (for local date/time conversion)
-- Business hours (open/close times per day of week)
-- Blocked dates (excluded dates)
-- Existing appointments (capacity check per slot)
-
-The computation SHALL reuse the existing `getAvailableSlots()` function from `src/lib/slots.ts`.
+The `GET /api/stores/{slug}/slots?date=YYYY-MM-DD` endpoint SHALL compute slots with the store's timezone (`time.LoadLocation`), business hours, blocked dates, and existing appointments. Slots SHALL be windows of `slotDuration` minutes from `openTime` to `closeTime`, including only windows where `start + slotDuration <= closeTime`.
 
 #### Scenario: Slots respect business hours
 
@@ -70,15 +58,32 @@ The computation SHALL reuse the existing `getAvailableSlots()` function from `sr
 - **When** a user requests slots for 2026-07-20
 - **Then** the response SHALL be an empty array
 
-#### Scenario: Slot at max capacity is unavailable
+#### Scenario: Cancelled appointments do not occupy capacity
 
-- **Given** a store with maxParallelBookings=1 and one existing appointment at 10:00
+- **Given** a store with `maxParallelBookings = 1`
+- **And** an appointment at 10:00 with status `CANCELLED`
+- **When** a user requests slots for that date
+- **Then** the 10:00 slot SHALL have `available: true`
+
+#### Scenario: Completed appointments occupy capacity
+
+- **Given** a store with `maxParallelBookings = 1`
+- **And** an appointment at 10:00 with status `COMPLETED`
 - **When** a user requests slots for that date
 - **Then** the 10:00 slot SHALL have `available: false`
-- **And** all other slots SHALL have `available: true`
 
-#### Scenario: Slots use store timezone
+#### Scenario: Slots use store timezone with DST safety
 
-- **Given** a store in timezone "America/Argentina/Buenos_Aires" (UTC-3)
-- **When** a user requests slots for 2026-07-20
-- **Then** existing appointments SHALL be converted to local time before capacity check
+- **Given** a store in "America/Argentina/Buenos_Aires"
+- **When** a user requests slots for a date
+- **Then** the daily window SHALL be computed with `time.AddDate` (not `Add(24h)`) so DST transitions are safe
+
+### Requirement: Max slots per day
+
+When `maxSlotsPerDay > 0`, slots SHALL be unavailable once the day's total bookings reach `maxSlotsPerDay`.
+
+#### Scenario: Daily limit reached
+
+- **Given** a store with `maxSlotsPerDay = 2` and 2 existing bookings that day
+- **When** a user requests slots for that date
+- **Then** all slots SHALL have `available: false`

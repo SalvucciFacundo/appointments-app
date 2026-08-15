@@ -1,151 +1,77 @@
-# Owner Portal Specification
+# Spec: owner-portal
 
-## Purpose
+## MODIFIED Requirements
 
-Store onboarding flow and configuration management for service-store owners. Covers the API contract for store CRUD, business hours, blocked dates, and the UI surfaces (onboarding + dashboard) that consume them.
+### Requirement: Owner authentication via API key stub
 
-## Requirements
+Dashboard and owner routes SHALL authenticate with the static API key in `X-API-Key`. This is a temporary stub until the real auth (Google OAuth) phase; the frontend contract SHALL remain compatible with replacing the key with a real token later.
 
-### Requirement: Store Onboarding API
+#### Scenario: Dashboard loads with API key
 
-POST `/api/stores` MUST create a store, update the authenticated user's role to `OWNER`, and return the created store. The system MUST auto-generate a URL-safe `slug` from the store `name`. The endpoint MUST validate that `name`, `description`, `address`, `phone`, and `specialty` are present and non-empty. On slug collision the endpoint MUST return 409 with the conflicting slug.
+- **Given** the SPA is configured with the owner API key
+- **When** the dashboard requests owner data
+- **Then** requests SHALL include `X-API-Key` and SHALL succeed
 
-#### Scenario: Successful store creation
+#### Scenario: Dashboard without API key is rejected
 
-- GIVEN an authenticated USER with no existing store
-- WHEN POST `/api/stores` with valid `{ name, description, address, phone, specialty }`
-- THEN a Store record is created with an auto-generated slug
-- AND the user's role is updated to OWNER
-- AND the response is 201 with the store object
+- **Given** a request without a valid `X-API-Key`
+- **When** the owner API validates it
+- **Then** the response SHALL be `401`
 
-#### Scenario: Missing required field
+### Requirement: Owner store CRUD
 
-- GIVEN an authenticated USER
-- WHEN POST `/api/stores` with `name` omitted
-- THEN the response is 400 with a validation error listing `name`
+The dashboard SHALL support creating and editing a store: name, description, address, phone, specialty, latitude, longitude, `slotDuration`, `maxParallelBookings`, `maxSlotsPerDay`, `cancelationLimit`. Store creation SHALL auto-generate a unique slug.
 
-#### Scenario: Slug collision
+#### Scenario: Owner creates a store
 
-- GIVEN a store with slug `mi-tienda` already exists
-- WHEN POST `/api/stores` with `name: "Mi Tienda"`
-- THEN the response is 409
+- **Given** an authenticated owner
+- **When** they submit a new store
+- **Then** the API SHALL return `201` with the store including a generated slug
 
----
+#### Scenario: Owner updates store settings
 
-### Requirement: Store Read/Update API
+- **Given** an existing store
+- **When** the owner updates `slotDuration` and `maxParallelBookings`
+- **Then** the API SHALL persist the new values
 
-GET `/api/stores/[storeId]` MUST return the store settings. PUT `/api/stores/[storeId]` MUST update store settings. GET `/api/stores/current` MUST return the authenticated OWNER's store. All endpoints MUST return 403 if the caller is not the store owner.
+### Requirement: Business hours management
 
-#### Scenario: Owner reads own store
+The dashboard SHALL display and edit business hours per day of week. Saving SHALL replace the full set of hours for the store (transactional delete + create).
 
-- GIVEN an OWNER with store id `abc`
-- WHEN GET `/api/stores/abc`
-- THEN the response is 200 with the store object
+#### Scenario: Owner saves business hours
 
-#### Scenario: Non-owner access denied
+- **Given** a store with hours Mon-Fri 09:00-18:00
+- **When** the owner changes Monday to 10:00-16:00 and saves
+- **Then** the API SHALL persist the full new set of hours
 
-- GIVEN OWNER-A with store `abc`
-- WHEN OWNER-B calls GET `/api/stores/abc`
-- THEN the response is 403
+#### Scenario: Invalid time format is rejected
 
-#### Scenario: Current store shortcut
+- **Given** an hours update with `openTime = "25:00"`
+- **When** the owner saves
+- **Then** the API SHALL return `400` with `field = "openTime"`
 
-- GIVEN an authenticated OWNER
-- WHEN GET `/api/stores/current`
-- THEN the response is 200 with that owner's store
+### Requirement: Blocked dates management
 
----
+The dashboard SHALL support adding a blocked date (with optional reason) and removing it. Only future dates SHALL be accepted.
 
-### Requirement: Business Hours API
+#### Scenario: Owner blocks a date
 
-PUT `/api/stores/[storeId]/hours` MUST accept an array of `BusinessHour` records. Each record MUST contain `dayOfWeek` (integer 0–6) and `open`/`close` times in `HH:MM` format. The system MUST reject records with invalid day or time values with a 400 response.
+- **Given** an authenticated owner
+- **When** they block a future date
+- **Then** the API SHALL return `201` with the blocked date
 
-#### Scenario: Set full-week hours
+#### Scenario: Past date is rejected
 
-- GIVEN an OWNER with store `abc`
-- WHEN PUT `/api/stores/abc/hours` with 7 valid day records
-- THEN all 7 records are persisted and 200 is returned
+- **Given** an authenticated owner
+- **When** they block a past date
+- **Then** the API SHALL return `400`
 
-#### Scenario: Invalid dayOfWeek
+### Requirement: Owner store list
 
-- GIVEN an OWNER
-- WHEN PUT with `dayOfWeek: 8`
-- THEN the response is 400
+The dashboard SHALL list the owner's stores with their business hours and blocked dates.
 
-#### Scenario: Invalid time format
+#### Scenario: Owner views their stores
 
-- GIVEN an OWNER
-- WHEN PUT with `open: "9am"`
-- THEN the response is 400
-
----
-
-### Requirement: Blocked Dates API
-
-POST `/api/stores/[storeId]/blocked-dates` MUST add a blocked date with `date` and `reason`. The system MUST validate the date is in the future. DELETE `/api/stores/[storeId]/blocked-dates/[id]` MUST remove the blocked date. Both endpoints MUST enforce owner access.
-
-#### Scenario: Add future blocked date
-
-- GIVEN an OWNER and date `2026-12-25` is in the future
-- WHEN POST with `{ date: "2026-12-25", reason: "Holiday" }`
-- THEN 201 is returned with the created record
-
-#### Scenario: Reject past date
-
-- GIVEN an OWNER
-- WHEN POST with a date in the past
-- THEN the response is 400
-
-#### Scenario: Remove blocked date
-
-- GIVEN a blocked date with id `bd-1`
-- WHEN DELETE `/api/stores/abc/blocked-dates/bd-1`
-- THEN the record is removed and 204 is returned
-
----
-
-### Requirement: Dashboard UI
-
-`/dashboard` SHALL display store info, business hours, slot configuration, blocked dates, and cancellation policy. Each section SHALL support inline editing. The page MUST redirect non-OWNERs to `/onboarding`.
-
-#### Scenario: Owner views dashboard
-
-- GIVEN an authenticated OWNER with a configured store
-- WHEN navigating to `/dashboard`
-- THEN all configuration sections are visible with current values
-
-#### Scenario: Inline edit business hours
-
-- GIVEN the dashboard is loaded
-- WHEN the owner edits a day's open/close times and saves
-- THEN the updated hours are persisted and displayed
-
-#### Scenario: Non-owner redirected
-
-- GIVEN an authenticated USER (not OWNER)
-- WHEN navigating to `/dashboard`
-- THEN the user is redirected to `/onboarding`
-
----
-
-### Requirement: Onboarding UI
-
-`/onboarding` SHALL provide a form for store creation with fields: name, description, address, phone, specialty. The form MUST display validation errors inline. On successful creation the page MUST redirect to `/dashboard`.
-
-#### Scenario: Complete onboarding
-
-- GIVEN an authenticated USER at `/onboarding`
-- WHEN all fields are filled and the form is submitted
-- THEN the store is created and the user is redirected to `/dashboard`
-
-#### Scenario: Validation error display
-
-- GIVEN the onboarding form
-- WHEN submitted with empty `name`
-- THEN an inline error message is shown for `name`
-
-#### Scenario: Resume incomplete onboarding
-
-- GIVEN a USER who abandoned onboarding mid-flow
-- WHEN returning to `/onboarding`
-- THEN previously entered values are restored
+- **Given** an owner with two stores
+- **When** the dashboard requests `GET /api/stores`
+- **Then** the response SHALL contain both stores with hours and blocked dates

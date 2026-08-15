@@ -1,59 +1,39 @@
 # Spec: public-landing
 
-## ADDED Requirements
+## MODIFIED Requirements
 
-### Requirement: Store listing on landing page
+### Requirement: Store listing with text search
 
-The landing page (`/`) SHALL display a list of all active stores.
+The landing page SHALL list stores with pagination (12 per page), filterable by `specialty` and by free-text `q` matching name, specialty, or address (case-insensitive).
 
-Each store card SHALL include:
-- Store name
-- Specialty
-- Average rating (computed from reviews)
+#### Scenario: Landing filters by specialty
 
-The landing page SHALL be a Server Component for SEO.
+- **Given** stores with specialties "Peluquería" and "Veterinaria"
+- **When** a user selects the "Veterinaria" filter
+- **Then** only veterinary stores SHALL be listed
 
-#### Scenario: Landing page renders all active stores
+#### Scenario: Landing searches by free text
 
-- **Given** there are 3 active stores in the database
-- **When** a user visits `/`
-- **Then** the page SHALL render 3 store cards
-- **And** each card SHALL display name, specialty, and average rating
+- **Given** a store named "Peluquería Central" at "Av. Siempre Viva 742"
+- **When** a user searches for "central"
+- **Then** the store SHALL appear in results
 
-#### Scenario: Store with no reviews shows zero rating
+#### Scenario: Landing paginates results
 
-- **Given** a store exists with no reviews
-- **When** the landing page renders
-- **Then** the store card SHALL display an average rating of 0
+- **Given** more than 12 stores
+- **When** the landing loads the first page
+- **Then** the response SHALL include `totalPages > 1` and pagination controls SHALL render
 
----
+### Requirement: Store card data without ratings
 
-### Requirement: Filter stores by specialty
+Store cards SHALL display name, specialty, address, and slug. Since reviews are out of scope, `averageRating` SHALL be `0` and `reviewCount` SHALL be `0`.
 
-The landing page SHALL support filtering stores by specialty via the `?specialty=` URL search parameter.
+### Requirement: Landing data from API
 
-The filter SHALL be case-insensitive and match partial specialty names.
+The landing SHALL fetch data from `GET /api/stores/public` (with `q`, `specialty`, `page`, `limit` query params) instead of querying the database directly.
 
-#### Scenario: Filter by specialty query param
+#### Scenario: Landing reflects backend search
 
-- **Given** there are stores with specialties "Dentistry", "Dermatology", and "Psychology"
-- **When** a user visits `/?specialty=dent`
-- **Then** only stores with specialty matching "dent" (case-insensitive) SHALL be displayed
-
-#### Scenario: Empty specialty filter shows all stores
-
-- **Given** there are multiple stores
-- **When** a user visits `/` without a specialty param
-- **Then** all active stores SHALL be displayed
-
----
-
-### Requirement: Store card navigation
-
-Each store card SHALL link to the store's public page at `/[slug]`.
-
-#### Scenario: Clicking a store card navigates to store page
-
-- **Given** a store with slug "mi-clinica" is displayed on the landing page
-- **When** a user clicks the store card
-- **Then** the browser SHALL navigate to `/mi-clinica`
+- **Given** the backend supports the `q` filter
+- **When** the landing sends `?q=central`
+- **Then** the results SHALL match the search
