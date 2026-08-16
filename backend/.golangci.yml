@@ -1,0 +1,27 @@
+# Appointments backend — golangci-lint configuration.
+# See https://golangci-lint.run/usage/configuration/ for the full reference.
+
+run:
+  timeout: 3m
+  tests: true
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+    - gofmt
+    - goimports
+
+linters-settings:
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: github.com/salvuccifacundo/appointments-app/backend
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

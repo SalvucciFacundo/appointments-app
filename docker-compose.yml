@@ -1,0 +1,51 @@
+# Local development stack: PostgreSQL + Go API + React SPA.
+#
+# Primer arranque (tras `docker compose up -d`):
+#   cd backend && make tools && make migrate-up
+# (la DB queda healthly; las migraciones goose corren desde el host contra
+# localhost:5432 porque postgres publica el puerto).
+name: appointments
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: appointments
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d appointments"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/appointments?sslmode=disable
+      PORT: "8080"
+      API_KEY: dev-api-key
+      OWNER_ID: dashboard-owner
+      CORS_ORIGINS: http://localhost:3000
+      APP_URL: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    environment:
+      BACKEND_UPSTREAM: backend:8080
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  pgdata:
