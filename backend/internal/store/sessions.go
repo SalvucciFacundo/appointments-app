@@ -70,6 +70,18 @@ func (db *DB) DeleteSessionByTokenHash(ctx context.Context, tokenHash string) er
 	return err
 }
 
+// GetSessionCSRF returns the CSRF token bound to a session token hash, or
+// pgx.ErrNoRows when the session is absent or expired. The Session middleware
+// uses it to validate the double-submit CSRF token on cookie-authenticated
+// mutations.
+func (db *DB) GetSessionCSRF(ctx context.Context, tokenHash string) (string, error) {
+	var token string
+	err := db.pool.QueryRow(ctx,
+		`SELECT csrf_token FROM sessions WHERE token_hash = $1 AND expires_at > now()`,
+		tokenHash).Scan(&token)
+	return token, err
+}
+
 // DeleteExpiredSessions removes sessions whose expiry has passed.
 func (db *DB) DeleteExpiredSessions(ctx context.Context) error {
 	_, err := db.pool.Exec(ctx, `DELETE FROM sessions WHERE expires_at <= now()`)

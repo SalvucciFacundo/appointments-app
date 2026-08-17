@@ -97,10 +97,21 @@ func (db *DB) GetUserByID(ctx context.Context, id string) (User, error) {
 	return scanUser(row)
 }
 
-// EnsureBootstrapOwner idempotently ensures the bootstrap owner user exists
-// with the legacy id and configured email and role OWNER, so existing stores
-// keep their ownership. It returns the persisted row.
+// EnsureBootstrapOwner idempotently ensures the bootstrap owner user exists,
+// so existing stores keep their ownership. The bootstrap email may already
+// belong to a user who registered with it (role OWNER via Register): in that
+// case that user is promoted and returned, keeping the X-API-Key fallback and
+// the registered owner as the same actor. Otherwise the legacy id is reused
+// (ON CONFLICT (id) updates its email and role).
 func (db *DB) EnsureBootstrapOwner(ctx context.Context, id, email string) (User, error) {
+	if existing, err := db.GetUserByEmail(ctx, email); err == nil {
+		row := db.pool.QueryRow(ctx,
+			`UPDATE users SET role = 'OWNER' WHERE id = $1 RETURNING `+userColumns, existing.ID)
+		return scanUser(row)
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return User{}, err
+	}
+
 	row := db.pool.QueryRow(ctx, `
 		INSERT INTO users (id, name, email, role, email_verified)
 		VALUES ($1, $2, $3, 'OWNER', false)

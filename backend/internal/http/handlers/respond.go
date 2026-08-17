@@ -36,8 +36,9 @@ func writeError(w http.ResponseWriter, status int, code, message, field string) 
 }
 
 // respondError maps a service error to the HTTP error contract:
-// FieldError → 400, ConflictError → 409 (with its code), ErrNotFound → 404,
-// anything else → 500 internal.
+// FieldError → 400, ConflictError → 409 (with its code), ErrInvalidCredentials
+// → 401 invalid_credentials, ErrUnauthorized → 401 unauthorized, ErrForbidden
+// → 403 forbidden, ErrNotFound → 404, anything else → 500 internal.
 func respondError(w http.ResponseWriter, err error) {
 	var fe *service.FieldError
 	if errors.As(err, &fe) {
@@ -47,6 +48,18 @@ func respondError(w http.ResponseWriter, err error) {
 	var ce *service.ConflictError
 	if errors.As(err, &ce) {
 		writeError(w, http.StatusConflict, ce.Code, ce.Message, "")
+		return
+	}
+	if errors.Is(err, service.ErrInvalidCredentials) {
+		writeError(w, http.StatusUnauthorized, "invalid_credentials", "invalid email or password", "")
+		return
+	}
+	if errors.Is(err, service.ErrUnauthorized) {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "authentication required", "")
+		return
+	}
+	if errors.Is(err, service.ErrForbidden) {
+		writeError(w, http.StatusForbidden, "forbidden", "you do not have access to this resource", "")
 		return
 	}
 	if errors.Is(err, service.ErrNotFound) {

@@ -40,11 +40,24 @@ func (s *Service) GetPublicStore(ctx context.Context, slug string) (store.Store,
 	return st, hours, nil
 }
 
-// ListStoresByOwner returns all stores owned by ownerID with their business
-// hours and blocked dates embedded. The owner has few stores, so per-store
-// lookups are acceptable here.
-func (s *Service) ListStoresByOwner(ctx context.Context, ownerID string) ([]store.StoreDetail, error) {
-	stores, err := s.db.ListStoresByOwner(ctx, ownerID)
+// requireStoreOwnership loads a store and verifies the authenticated actor
+// owns it. Missing stores map to ErrNotFound, foreign stores to ErrForbidden.
+func (s *Service) requireStoreOwnership(ctx context.Context, actorID, storeID string) (store.Store, error) {
+	st, err := s.db.GetStoreByID(ctx, storeID)
+	if err != nil {
+		return store.Store{}, notFoundIfNoRows(err)
+	}
+	if st.OwnerID != actorID {
+		return store.Store{}, ErrForbidden
+	}
+	return st, nil
+}
+
+// ListStoresByOwner returns all stores owned by the authenticated actor with
+// their business hours and blocked dates embedded. The owner has few stores,
+// so per-store lookups are acceptable here.
+func (s *Service) ListStoresByOwner(ctx context.Context, actorID string) ([]store.StoreDetail, error) {
+	stores, err := s.db.ListStoresByOwner(ctx, actorID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +78,7 @@ func (s *Service) ListStoresByOwner(ctx context.Context, ownerID string) ([]stor
 
 // CreateStore validates the input, ensures the owner user row exists, resolves
 // a unique slug, and inserts the store.
-func (s *Service) CreateStore(ctx context.Context, ownerID string, in store.CreateStoreInput) (store.Store, error) {
+func (s *Service) CreateStore(ctx context.Context, actorID string, in store.CreateStoreInput) (store.Store, error) {
 	if strings.TrimSpace(in.Name) == "" {
 		return store.Store{}, &FieldError{Field: "name", Message: "name is required"}
 	}
@@ -92,7 +105,7 @@ func (s *Service) CreateStore(ctx context.Context, ownerID string, in store.Crea
 		in.CancelationLimit = defaultCancelationLimit
 	}
 
-	if err := s.db.EnsureOwnerUser(ctx, ownerID); err != nil {
+	if err := s.db.EnsureOwnerUser(ctx, actorID); err != nil {
 		return store.Store{}, err
 	}
 	slug, err := GenerateUniqueSlug(ctx, s.db, in.Name)
@@ -100,15 +113,15 @@ func (s *Service) CreateStore(ctx context.Context, ownerID string, in store.Crea
 		return store.Store{}, err
 	}
 	in.Slug = slug
-	in.OwnerID = ownerID
+	in.OwnerID = actorID
 	return s.db.CreateStore(ctx, in)
 }
 
 // GetStore returns a store by id with its business hours and blocked dates.
-func (s *Service) GetStore(ctx context.Context, id string) (store.StoreDetail, error) {
-	st, err := s.db.GetStoreByID(ctx, id)
+func (s *Service) GetStore(ctx context.Context, actorID, id string) (store.StoreDetail, error) {
+	st, err := s.requireStoreOwnership(ctx, actorID, id)
 	if err != nil {
-		return store.StoreDetail{}, notFoundIfNoRows(err)
+		return store.StoreDetail{}, err
 	}
 	hours, err := s.db.ListBusinessHours(ctx, id)
 	if err != nil {
@@ -122,23 +135,23 @@ func (s *Service) GetStore(ctx context.Context, id string) (store.StoreDetail, e
 }
 
 // UpdateStore applies a partial update to the store with the given id.
-func (s *Service) UpdateStore(ctx context.Context, id string, in store.UpdateStoreInput) (store.Store, error) {
-	if _, err := s.db.GetStoreByID(ctx, id); err != nil {
-		return store.Store{}, notFoundIfNoRows(err)
+func (s *Service) UpdateStore(ctx context.Context, actorID, id string, in store.UpdateStoreInput) (store.Store, error) {
+	if _, err := s.requireStoreOwnership(ctx, actorID, id); err != nil {
+		return store.Store{}, err
 	}
 	return s.db.UpdateStore(ctx, id, in)
 }
 
 // ReplaceBusinessHours atomically replaces all business hours for a store.
-func (s *Service) ReplaceBusinessHours(ctx context.Context, storeID string, in []store.BusinessHourInput) ([]store.BusinessHour, error) {
-	if _, err := s.db.GetStoreByID(ctx, storeID); err != nil {
-		return nil, notFoundIfNoRows(err)
+func (s *Service) ReplaceBusinessHours(ctx context.Context, actorID, storeID string, in []store.BusinessHourInput) ([]store.BusinessHour, error) {
+	if _, err := s.requireStoreOwnership(ctx, actorID, storeID); err != nil {
+		return nil, err
 	}
 	return s.db.ReplaceBusinessHours(ctx, storeID, in)
 }
 
 // CreateBlockedDate validates that the date is not in the past, then blocks it.
-func (s *Service) CreateBlockedDate(ctx context.Context, storeID, date, reason string) (store.BlockedDate, error) {
+func (s *Service) CreateBlockedDate(ctx context.Context, actorID, storeID, date, reason string) (store.BlockedDate, error) {
 	if err := ValidateFutureDate(date); err != nil {
 		return store.BlockedDate{}, &FieldError{Field: "date", Message: err.Error()}
 	}
@@ -146,8 +159,8 @@ func (s *Service) CreateBlockedDate(ctx context.Context, storeID, date, reason s
 	if err != nil {
 		return store.BlockedDate{}, &FieldError{Field: "date", Message: "date must be in YYYY-MM-DD format"}
 	}
-	if _, err := s.db.GetStoreByID(ctx, storeID); err != nil {
-		return store.BlockedDate{}, notFoundIfNoRows(err)
+	if _, err := s.requireStoreOwnership(ctx, actorID, storeID); err != nil {
+		return store.BlockedDate{}, err
 	}
 	var reasonPtr *string
 	if reason = strings.TrimSpace(reason); reason != "" {
@@ -158,9 +171,9 @@ func (s *Service) CreateBlockedDate(ctx context.Context, storeID, date, reason s
 
 // DeleteBlockedDate removes a blocked date. It is idempotent: deleting a
 // non-existent date still succeeds once the store exists.
-func (s *Service) DeleteBlockedDate(ctx context.Context, storeID, id string) error {
-	if _, err := s.db.GetStoreByID(ctx, storeID); err != nil {
-		return notFoundIfNoRows(err)
+func (s *Service) DeleteBlockedDate(ctx context.Context, actorID, storeID, id string) error {
+	if _, err := s.requireStoreOwnership(ctx, actorID, storeID); err != nil {
+		return err
 	}
 	if err := s.db.DeleteBlockedDate(ctx, id); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return err

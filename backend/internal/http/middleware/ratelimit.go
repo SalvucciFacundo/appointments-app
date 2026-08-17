@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/salvuccifacundo/appointments-app/backend/internal/store"
 )
 
 // Rate limit configuration: owner clients (valid X-API-Key) get a higher
@@ -52,17 +54,17 @@ func (l *limiter) allow(key string, limit int) (bool, time.Time) {
 	return true, entry.resetAt
 }
 
-// RateLimit limits requests per client: requests carrying a valid API key get
-// OwnerRateLimit per minute, everyone else AnonymousRateLimit. Exceeding the
-// limit yields 429 with a Retry-After header. An empty apiKey means the owner
-// classification never triggers.
-func RateLimit(apiKey string) func(http.Handler) http.Handler {
+// RateLimit limits requests per client: requests the isOwner predicate
+// classifies as owner-tier get OwnerRateLimit per minute, everyone else
+// AnonymousRateLimit. Exceeding the limit yields 429 with a Retry-After
+// header. A nil predicate never classifies a request as owner-tier.
+func RateLimit(isOwner func(*http.Request) bool) func(http.Handler) http.Handler {
 	l := &limiter{entries: make(map[string]*windowEntry)}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			key, limit := clientID(r), AnonymousRateLimit
-			if apiKey != "" && secureEqual(r.Header.Get("X-API-Key"), apiKey) {
-				key, limit = "api:"+key, OwnerRateLimit
+			if isOwner != nil && isOwner(r) {
+				key, limit = "owner:"+key, OwnerRateLimit
 			}
 
 			allowed, resetAt := l.allow(key, limit)
@@ -77,6 +79,17 @@ func RateLimit(apiKey string) func(http.Handler) http.Handler {
 			}
 			next.ServeHTTP(w, r)
 		})
+	}
+}
+
+// IsOwner returns a rate-limit tier predicate: owner-tier for a session
+// authenticated OWNER actor or a valid X-API-Key during the transition.
+func IsOwner(apiKey string) func(*http.Request) bool {
+	return func(r *http.Request) bool {
+		if actor := ActorFromContext(r.Context()); actor != nil && actor.Role == store.RoleOwner {
+			return true
+		}
+		return apiKey != "" && SecureEqual(r.Header.Get("X-API-Key"), apiKey)
 	}
 }
 

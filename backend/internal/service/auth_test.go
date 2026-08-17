@@ -73,11 +73,19 @@ func (f *fakeAuthStore) GetUserByID(_ context.Context, id string) (store.User, e
 }
 
 func (f *fakeAuthStore) EnsureBootstrapOwner(_ context.Context, id, email string) (store.User, error) {
+	// Mirror the real store: the bootstrap email may already belong to a
+	// registered user, which is promoted and returned.
+	if u, ok := f.byEmail[email]; ok {
+		u.Role = store.RoleOwner
+		f.byEmail[email] = u
+		f.byID[u.ID] = u
+		return u, nil
+	}
 	if u, ok := f.byID[id]; ok {
 		u.Email = email
 		u.Role = store.RoleOwner
 		f.byID[id] = u
-		f.byEmail[u.Email] = u
+		f.byEmail[email] = u
 		return u, nil
 	}
 	u := store.User{ID: id, Name: "Dashboard Owner", Email: email, Role: store.RoleOwner}
@@ -109,6 +117,14 @@ func (f *fakeAuthStore) GetActorByTokenHash(_ context.Context, tokenHash string)
 		return store.Actor{}, pgx.ErrNoRows
 	}
 	return store.Actor{ID: u.ID, Name: u.Name, Email: u.Email, Role: u.Role}, nil
+}
+
+func (f *fakeAuthStore) GetSessionCSRF(_ context.Context, tokenHash string) (string, error) {
+	s, ok := f.sessions[tokenHash]
+	if !ok || !s.ExpiresAt.After(time.Now()) {
+		return "", pgx.ErrNoRows
+	}
+	return s.CSRFToken, nil
 }
 
 func (f *fakeAuthStore) DeleteSessionByTokenHash(_ context.Context, tokenHash string) error {
@@ -404,6 +420,37 @@ func TestBootstrapOwner_EnsuresLegacyOwner(t *testing.T) {
 	}
 	if again.ID != actor.ID || again.Email != actor.Email {
 		t.Errorf("second call changed actor: %+v vs %+v", again, actor)
+	}
+}
+
+func TestBootstrapOwner_ReturnsRegisteredOwnerForBootstrapEmail(t *testing.T) {
+	f := newFakeAuthStore()
+	svc := testAuthService(f)
+	ctx := context.Background()
+
+	// A user registers with the bootstrap email (role OWNER per Register).
+	registered, err := svc.Register(ctx, "Owner", testBootstrapEmail, "password123")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+	if registered.Role != store.RoleOwner {
+		t.Fatalf("role = %s, want OWNER", registered.Role)
+	}
+
+	// The API-key fallback maps to the same actor: the registered user, not a
+	// fresh row with the legacy id (which would collide on the unique email).
+	actor, err := svc.BootstrapOwner(ctx)
+	if err != nil {
+		t.Fatalf("BootstrapOwner: %v", err)
+	}
+	if actor.ID != registered.ID {
+		t.Errorf("actor id = %q, want registered user id %q", actor.ID, registered.ID)
+	}
+	if actor.Email != testBootstrapEmail || actor.Role != store.RoleOwner {
+		t.Errorf("actor = %+v, want owner@example.com/OWNER", actor)
+	}
+	if len(f.byID) != 1 {
+		t.Errorf("user count = %d, want 1 (no duplicate owner row)", len(f.byID))
 	}
 }
 

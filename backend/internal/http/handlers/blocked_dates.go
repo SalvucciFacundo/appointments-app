@@ -24,11 +24,15 @@ func (h *Handlers) CreateBlockedDate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "validation", "date is required", "date")
 		return
 	}
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
 	reason := ""
 	if body.Reason != nil {
 		reason = *body.Reason
 	}
-	bd, err := h.svc.CreateBlockedDate(r.Context(), chi.URLParam(r, "id"), body.Date, reason)
+	bd, err := h.svc.CreateBlockedDate(r.Context(), actor.ID, chi.URLParam(r, "id"), body.Date, reason)
 	if err != nil {
 		respondError(w, err)
 		return
@@ -38,9 +42,13 @@ func (h *Handlers) CreateBlockedDate(w http.ResponseWriter, r *http.Request) {
 
 // DeleteBlockedDate handles DELETE /api/stores/{id}/blocked-dates/{bid}.
 func (h *Handlers) DeleteBlockedDate(w http.ResponseWriter, r *http.Request) {
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
 	storeID := chi.URLParam(r, "id")
 	bid := chi.URLParam(r, "bid")
-	if err := h.svc.DeleteBlockedDate(r.Context(), storeID, bid); err != nil {
+	if err := h.svc.DeleteBlockedDate(r.Context(), actor.ID, storeID, bid); err != nil {
 		respondError(w, err)
 		return
 	}

@@ -141,6 +141,16 @@ func (s *Service) AuthenticateSession(ctx context.Context, rawToken string) (sto
 	return actor, nil
 }
 
+// SessionCSRFToken returns the CSRF token bound to the session for the given
+// raw token. The Session middleware uses it to validate double-submit CSRF on
+// cookie-authenticated mutations.
+func (s *Service) SessionCSRFToken(ctx context.Context, rawToken string) (string, error) {
+	if rawToken == "" {
+		return "", ErrUnauthorized
+	}
+	return s.auth.GetSessionCSRF(ctx, sha256Hex(rawToken))
+}
+
 // BootstrapOwner ensures the legacy owner user exists (id = Options.BootstrapID,
 // email = Options.BootstrapEmail, role OWNER, no password) and returns it as
 // the authenticated actor. The X-API-Key stub maps onto this actor during the

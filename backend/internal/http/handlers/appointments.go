@@ -13,6 +13,10 @@ import (
 // ListAppointments handles GET /api/stores/{id}/appointments with optional
 // date and status filters.
 func (h *Handlers) ListAppointments(w http.ResponseWriter, r *http.Request) {
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
 	storeID := chi.URLParam(r, "id")
 	date := r.URL.Query().Get("date")
 	var status *store.AppointmentStatus
@@ -20,7 +24,7 @@ func (h *Handlers) ListAppointments(w http.ResponseWriter, r *http.Request) {
 		st := store.AppointmentStatus(s)
 		status = &st
 	}
-	appointments, err := h.svc.ListAppointments(r.Context(), storeID, date, status)
+	appointments, err := h.svc.ListAppointments(r.Context(), actor.ID, storeID, date, status)
 	if err != nil {
 		respondError(w, err)
 		return
@@ -51,6 +55,10 @@ func (h *Handlers) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "validation", "invalid JSON body", "")
 		return
 	}
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
 	in := service.CreateAppointmentInput{
 		Date:        body.Date,
 		Time:        body.Time,
@@ -62,7 +70,7 @@ func (h *Handlers) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		Status:      store.AppointmentStatus(body.Status),
 		Force:       body.Force,
 	}
-	appt, err := h.svc.CreateAppointment(r.Context(), chi.URLParam(r, "id"), in)
+	appt, err := h.svc.CreateAppointment(r.Context(), actor.ID, chi.URLParam(r, "id"), in)
 	if err != nil {
 		respondError(w, err)
 		return
@@ -83,8 +91,12 @@ func (h *Handlers) UpdateAppointmentStatus(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "validation", "invalid JSON body", "")
 		return
 	}
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
 	appt, err := h.svc.UpdateAppointmentStatus(
-		r.Context(), chi.URLParam(r, "id"), chi.URLParam(r, "aid"), body.Action)
+		r.Context(), actor.ID, chi.URLParam(r, "id"), chi.URLParam(r, "aid"), body.Action)
 	if err != nil {
 		respondError(w, err)
 		return
@@ -107,8 +119,12 @@ func (h *Handlers) RescheduleAppointment(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "validation", "invalid JSON body", "")
 		return
 	}
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
 	appt, err := h.svc.RescheduleAppointment(
-		r.Context(), chi.URLParam(r, "id"), chi.URLParam(r, "aid"), body.Date, body.Time)
+		r.Context(), actor.ID, chi.URLParam(r, "id"), chi.URLParam(r, "aid"), body.Date, body.Time)
 	if err != nil {
 		respondError(w, err)
 		return
