@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   listOwnerStores,
   getStore,
@@ -7,6 +8,7 @@ import {
   addBlockedDate,
   deleteBlockedDate,
 } from "@/api/stores"
+import { useAuth } from "@/auth/AuthContext"
 import type { Store, StoreDetail, BusinessHourInput, Appointment } from "@/api/types"
 import Card from "@/components/ui/Card"
 import Button from "@/components/ui/Button"
@@ -31,6 +33,8 @@ function Skeleton() {
 
 export default function Dashboard() {
   const { addToast } = useToast()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
 
   const [stores, setStores] = useState<Store[]>([])
   const [store, setStore] = useState<StoreDetail | null>(null)
@@ -302,6 +306,24 @@ export default function Dashboard() {
             ))}
           </select>
         )}
+        <div className="ml-auto flex items-center gap-3">
+          {user && (
+            <span className="text-xs text-[var(--text-tertiary)]">
+              {user.name} · {user.email}
+            </span>
+          )}
+          <button
+            onClick={async () => {
+              await logout()
+              navigate("/login")
+            }}
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-1.5 text-xs font-medium
+              text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]
+              transition-all duration-150"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </div>
 
       {loading ? (
