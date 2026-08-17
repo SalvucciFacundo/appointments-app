@@ -1,6 +1,7 @@
 -- Auth migration: additive, non-destructive. Pre-existing users keep
 -- role='USER' and password_hash NULL.
 
+-- +goose Up
 ALTER TABLE users
   ADD COLUMN role text NOT NULL DEFAULT 'USER'
     CHECK (role IN ('USER','OWNER','ADMIN')),
@@ -18,3 +19,12 @@ CREATE TABLE sessions (
 );
 CREATE INDEX idx_sessions_user    ON sessions(user_id);
 CREATE INDEX idx_sessions_expires ON sessions(expires_at);
+
+-- +goose Down
+DROP TABLE IF EXISTS sessions;
+
+ALTER TABLE users
+  DROP COLUMN role,
+  DROP COLUMN password_hash,
+  DROP COLUMN email_verified,
+  DROP COLUMN verification_token;
