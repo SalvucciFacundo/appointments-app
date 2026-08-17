@@ -71,25 +71,25 @@ Chain strategy: stacked-to-main
 
 ## Phase 7: Frontend API
 
-- [ ] 7.1 Crear `src/lib/cookies.ts`: getCookie(name).
-- [ ] 7.2 Ampliar `src/api/types.ts`: Role, User, LoginInput, RegisterInput.
-- [ ] 7.3 Modificar `src/api/client.ts`: credentials "include" siempre, eliminar apiKey/localStorage, mutaciones inyectan X-CSRF-Token desde cookie csrf_token, hook onUnauthorized (redirect /login), request con options.method.
-- [ ] 7.4 Crear `src/api/auth.ts`: register/login/logout/me.
-- [ ] 7.5 Quitar parámetro apiKey de `src/api/stores.ts` y `src/api/appointments.ts`.
-- [ ] 7.6 Quitar prop apiKey de `src/components/appointments/{TodayAgenda,PendingQueue,DayCalendar,AppointmentDetail}.tsx`.
+- [x] 7.1 Crear `src/lib/cookies.ts`: getCookie(name).
+- [x] 7.2 Ampliar `src/api/types.ts`: Role, User, LoginInput, RegisterInput.
+- [x] 7.3 Modificar `src/api/client.ts`: credentials "include" siempre, eliminar apiKey/localStorage, mutaciones inyectan X-CSRF-Token desde cookie csrf_token, hook onUnauthorized (redirect /login), request con options.method.
+- [x] 7.4 Crear `src/api/auth.ts`: register/login/logout/me.
+- [x] 7.5 Quitar parámetro apiKey de `src/api/stores.ts` y `src/api/appointments.ts`.
+- [x] 7.6 Quitar prop apiKey de `src/components/appointments/{TodayAgenda,PendingQueue,DayCalendar,AppointmentDetail}.tsx`.
 
 ## Phase 8: Frontend auth + pages
 
-- [ ] 8.1 Crear `src/auth/AuthContext.tsx`: AuthProvider (user, loading, login, register, logout; me() al montar), useAuth.
-- [ ] 8.2 Crear `src/auth/RequireAuth.tsx`: guard — loading→spinner, sin user→Navigate /login.
-- [ ] 8.3 Crear `src/pages/Login.tsx` y `src/pages/Register.tsx` (copy UI en español; register 201 → redirect /login).
-- [ ] 8.4 Modificar `src/App.tsx`: AuthProvider, rutas /login y /register, /dashboard envuelto en RequireAuth.
-- [ ] 8.5 Modificar `src/pages/Dashboard.tsx`: eliminar pantalla/estado de API key y API_KEY_STORAGE; botón logout.
+- [x] 8.1 Crear `src/auth/AuthContext.tsx`: AuthProvider (user, loading, login, register, logout; me() al montar), useAuth.
+- [x] 8.2 Crear `src/auth/RequireAuth.tsx`: guard — loading→spinner, sin user→Navigate /login.
+- [x] 8.3 Crear `src/pages/Login.tsx` y `src/pages/Register.tsx` (copy UI en español; register 201 → redirect /login).
+- [x] 8.4 Modificar `src/App.tsx`: AuthProvider, rutas /login y /register, /dashboard envuelto en RequireAuth.
+- [x] 8.5 Modificar `src/pages/Dashboard.tsx`: eliminar pantalla/estado de API key y API_KEY_STORAGE; botón logout.
 
 ## Phase 9: Tests + limpieza
 
 - [x] 9.1 Crear `backend/internal/service/password_test.go` y `auth_test.go` (fake store, sin DB): roundtrip/mismatch hash, longitud NewToken, Register normalización/validación/duplicado/role bootstrap, Login indistinguible email/password, AuthenticateSession expirada→ErrUnauthorized. (Slice 1: parte de service completa. Slice 2: caso ownership→ErrForbidden agregado en appointments_test.go + BootstrapOwner devuelve el owner registrado con el email bootstrap.)
 - [x] 9.2 Crear `backend/internal/http/handlers/auth_test.go` + `auth_router_test.go` (fake service, httptest): códigos /auth/* (201/409/401/204), cookies seteadas, transición dual X-API-Key+sesión, CSRF 403 csrf_invalid, USER→ruta owner 403.
 - [x] 9.3 Extender `backend/internal/http/middleware/middleware_test.go`: Session actor vs anónimo, RequireRole, CSRF omitido/válido, RateLimit tier por actor.
-- [ ] 9.4 Actualizar `frontend/src/api/client.test.ts` (credentials include, header CSRF, manejo 401, sin localStorage) + crear `src/auth/auth.test.tsx` (guard redirige sin user).
-- [ ] 9.5 Verificación final: `make test`, `make vet`, `make lint`, `npm run test`, `npm run build`; smoke manual register→login→dashboard→logout y store ajeno→403.
+- [x] 9.4 Actualizar `frontend/src/api/client.test.ts` (credentials include, header CSRF, manejo 401, sin localStorage) + crear `src/auth/auth.test.tsx` (guard redirige sin user).
+- [x] 9.5 Verificación final: `make test`, `make vet`, `make lint`, `npm run test`, `npm run build`; smoke manual register→login→dashboard→logout y store ajeno→403. (Slice 3: `npm run test` 11/11 y `npm run build` OK; `make test`/`make vet` backend OK; `make lint` bloqueado por golangci-lint ausente en PATH — pre-existente; smoke manual E2E queda para la fase verify con backend arriba.)
