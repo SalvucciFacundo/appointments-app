@@ -8,7 +8,6 @@ import Button from "@/components/ui/Button"
 interface DayCalendarProps {
   storeId: string
   store: StoreDetail
-  apiKey: string
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -56,7 +55,7 @@ function getTimeInZone(iso: string, timezone: string): { hour: number; minute: n
   }
 }
 
-export default function DayCalendar({ storeId, store, apiKey }: DayCalendarProps) {
+export default function DayCalendar({ storeId, store }: DayCalendarProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -65,7 +64,7 @@ export default function DayCalendar({ storeId, store, apiKey }: DayCalendarProps
     setLoading(true)
     setError(null)
     try {
-      const data = await listAppointments(storeId, { date: todayStr() }, apiKey)
+      const data = await listAppointments(storeId, { date: todayStr() })
       setAppointments(data)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Error al cargar los turnos")

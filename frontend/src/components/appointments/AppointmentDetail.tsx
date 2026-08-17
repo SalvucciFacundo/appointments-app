@@ -9,7 +9,6 @@ import { useToast } from "@/components/ui/Toast"
 interface AppointmentDetailProps {
   appointment: Appointment | null
   storeId: string
-  apiKey: string
   onClose: () => void
   onStatusChanged: () => void // callback to refresh parent lists
 }
@@ -42,7 +41,6 @@ const DAY_NAMES = [
 export default function AppointmentDetail({
   appointment,
   storeId,
-  apiKey,
   onClose,
   onStatusChanged,
 }: AppointmentDetailProps) {
@@ -67,7 +65,7 @@ export default function AppointmentDetail({
     setActing(true)
     setError(null)
     try {
-      await updateStatus(storeId, appointment.id, action, apiKey)
+      await updateStatus(storeId, appointment.id, action)
       addToast(`Turno ${actionLabels[action] ?? action.toLowerCase()} correctamente`, "success")
       onStatusChanged()
     } catch (err) {
@@ -86,7 +84,7 @@ export default function AppointmentDetail({
     setRescheduling(true)
     setRescheduleError(null)
     try {
-      await reschedule(storeId, appointment.id, { date: newDate, time: newTime }, apiKey)
+      await reschedule(storeId, appointment.id, { date: newDate, time: newTime })
       setShowReschedule(false)
       setNewDate("")
       setNewTime("")

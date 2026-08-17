@@ -7,7 +7,6 @@ import Button from "@/components/ui/Button"
 
 interface TodayAgendaProps {
   storeId: string
-  apiKey: string
   onSelectAppointment?: (apt: Appointment) => void
 }
 
@@ -27,7 +26,7 @@ function formatTime(iso: string): string {
   return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })
 }
 
-export default function TodayAgenda({ storeId, apiKey, onSelectAppointment }: TodayAgendaProps) {
+export default function TodayAgenda({ storeId, onSelectAppointment }: TodayAgendaProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +35,7 @@ export default function TodayAgenda({ storeId, apiKey, onSelectAppointment }: To
     setLoading(true)
     setError(null)
     try {
-      const data = await listAppointments(storeId, { date: todayStr() }, apiKey)
+      const data = await listAppointments(storeId, { date: todayStr() })
       setAppointments(data)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Error al cargar los turnos")

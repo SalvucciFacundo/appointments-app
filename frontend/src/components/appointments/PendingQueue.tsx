@@ -8,7 +8,6 @@ import { useToast } from "@/components/ui/Toast"
 
 interface PendingQueueProps {
   storeId: string
-  apiKey: string
 }
 
 function formatTime(iso: string): string {
@@ -34,7 +33,7 @@ function buildWaLink(phone: string, name: string, service: string | null, dateTi
   return `https://wa.me/${clean}?text=${encodeURIComponent(message)}`
 }
 
-export default function PendingQueue({ storeId, apiKey }: PendingQueueProps) {
+export default function PendingQueue({ storeId }: PendingQueueProps) {
   const { addToast } = useToast()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,7 +44,7 @@ export default function PendingQueue({ storeId, apiKey }: PendingQueueProps) {
     setLoading(true)
     setError(null)
     try {
-      const data = await listAppointments(storeId, { status: "PENDING" }, apiKey)
+      const data = await listAppointments(storeId, { status: "PENDING" })
       setAppointments(data)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Error al cargar los turnos pendientes")
@@ -61,7 +60,7 @@ export default function PendingQueue({ storeId, apiKey }: PendingQueueProps) {
   const handleAction = async (apt: Appointment, action: AppointmentAction) => {
     setActing(apt.id)
     try {
-      await updateStatus(storeId, apt.id, action, apiKey)
+      await updateStatus(storeId, apt.id, action)
       setAppointments((prev) => prev.filter((a) => a.id !== apt.id))
       addToast(
         action === "CONFIRM"
