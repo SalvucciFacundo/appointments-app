@@ -28,22 +28,22 @@ Chain strategy: stacked-to-main
 
 ## Phase 1: Migración
 
-- [ ] 1.1 Crear `backend/migrations/00002_user_auth.up.sql`: `ALTER TABLE users` (role NOT NULL DEFAULT 'USER' CHECK (role IN ('USER','OWNER','ADMIN')), password_hash, email_verified DEFAULT false, verification_token) + `CREATE TABLE sessions` (id, user_id FK CASCADE, token_hash UNIQUE, csrf_token, expires_at, created_at) + índices idx_sessions_user / idx_sessions_expires.
-- [ ] 1.2 Crear `backend/migrations/00002_user_auth.down.sql`: DROP TABLE sessions + ALTER users DROP COLUMN.
-- [ ] 1.3 Verificar `make migrate-up` / `make migrate-down`: filas users pre-existentes conservadas con role='USER', password_hash NULL.
+- [x] 1.1 Crear `backend/migrations/00002_user_auth.up.sql`: `ALTER TABLE users` (role NOT NULL DEFAULT 'USER' CHECK (role IN ('USER','OWNER','ADMIN')), password_hash, email_verified DEFAULT false, verification_token) + `CREATE TABLE sessions` (id, user_id FK CASCADE, token_hash UNIQUE, csrf_token, expires_at, created_at) + índices idx_sessions_user / idx_sessions_expires.
+- [x] 1.2 Crear `backend/migrations/00002_user_auth.down.sql`: DROP TABLE sessions + ALTER users DROP COLUMN.
+- [x] 1.3 Verificar `make migrate-up` / `make migrate-down`: filas users pre-existentes conservadas con role='USER', password_hash NULL. (Verificado vía psql aplicando el SQL exacto de up/down + goose Provider en DB throwaway; `make migrate-up` literal bloqueado por incompatibilidad pre-existente goose CLI vs naming `.up.sql`/`.down.sql` — ver apply-progress.)
 
 ## Phase 2: Store
 
-- [ ] 2.1 Crear `backend/internal/store/users.go`: types Role, RoleUser/RoleOwner/RoleAdmin, User{ID,Name,Email,Role,EmailVerified}, Actor{ID,Name,Email,Role}; CreateUser, GetUserByEmail, GetUserByID, EnsureBootstrapOwner, IsUniqueViolation (pgconn 23505); queries parametrizadas.
-- [ ] 2.2 Crear `backend/internal/store/sessions.go`: Session{ID,UserID,TokenHash,CSRFToken,ExpiresAt,CreatedAt}; CreateSession, GetActorByTokenHash (JOIN users), DeleteSessionByTokenHash, DeleteExpiredSessions.
+- [x] 2.1 Crear `backend/internal/store/users.go`: types Role, RoleUser/RoleOwner/RoleAdmin, User{ID,Name,Email,Role,EmailVerified}, Actor{ID,Name,Email,Role}; CreateUser, GetUserByEmail, GetUserByID, EnsureBootstrapOwner, IsUniqueViolation (pgconn 23505); queries parametrizadas. (User además lleva PasswordHash con `json:"-"`, necesario para Login.)
+- [x] 2.2 Crear `backend/internal/store/sessions.go`: Session{ID,UserID,TokenHash,CSRFToken,ExpiresAt,CreatedAt}; CreateSession, GetActorByTokenHash (JOIN users), DeleteSessionByTokenHash, DeleteExpiredSessions.
 
 ## Phase 3: Service
 
-- [ ] 3.1 Crear `backend/internal/service/password.go`: HashPassword (Argon2id m=65536, t=1, p=4, salt 16B, keyLen 32, formato `$argon2id$...`), VerifyPassword (subtle.ConstantTimeCompare), NewToken, NewCSRFToken (32 bytes hex).
-- [ ] 3.2 Crear `backend/internal/service/auth.go`: Register (normaliza email lowercase, password ≥8, role=USER salvo email==bootstrapEmail→OWNER, verif token=NewToken, duplicado→ConflictError email_taken), Login (SessionResult{RawToken,CSRFToken,ExpiresAt}, inválido→ErrInvalidCredentials), Logout idempotente, Me, AuthenticateSession (sha256→GetActorByTokenHash, vencida→ErrUnauthorized), BootstrapOwner (reusa OWNER_ID legacy), CleanupExpiredSessions.
-- [ ] 3.3 Ampliar `backend/internal/service/errors.go`: ErrUnauthorized, ErrForbidden, ErrInvalidCredentials.
-- [ ] 3.4 Ampliar `backend/internal/service/service.go`: Options{SessionTTL, BootstrapID, BootstrapEmail, Argon2Memory, Argon2Time}; NewService(db, opts); ampliar interfaz Service con métodos auth.
-- [ ] 3.5 `go get golang.org/x/crypto` + `go mod tidy`.
+- [x] 3.1 Crear `backend/internal/service/password.go`: HashPassword (Argon2id m=65536, t=1, p=4, salt 16B, keyLen 32, formato `$argon2id$...`), VerifyPassword (subtle.ConstantTimeCompare), NewToken, NewCSRFToken (32 bytes hex).
+- [x] 3.2 Crear `backend/internal/service/auth.go`: Register (normaliza email lowercase, password ≥8, role=USER salvo email==bootstrapEmail→OWNER, verif token=NewToken, duplicado→ConflictError email_taken), Login (SessionResult{RawToken,CSRFToken,ExpiresAt}, inválido→ErrInvalidCredentials), Logout idempotente, Me, AuthenticateSession (sha256→GetActorByTokenHash, vencida→ErrUnauthorized), BootstrapOwner (reusa OWNER_ID legacy), CleanupExpiredSessions.
+- [x] 3.3 Ampliar `backend/internal/service/errors.go`: ErrUnauthorized, ErrForbidden, ErrInvalidCredentials.
+- [x] 3.4 Ampliar `backend/internal/service/service.go`: Options{SessionTTL, BootstrapID, BootstrapEmail, Argon2Memory, Argon2Time}; NewService(db, opts) (variádico, retrocompatible); authStore interface para tests sin DB.
+- [x] 3.5 `go get golang.org/x/crypto` + `go mod tidy`.
 
 ## Phase 4: Middleware
 
@@ -65,8 +65,8 @@ Chain strategy: stacked-to-main
 
 ## Phase 6: Config + wiring
 
-- [ ] 6.1 Ampliar `backend/internal/config/config.go`: SessionTTL (SESSION_TTL default 24h), CookieSecure (COOKIE_SECURE default true), OwnerBootstrapEmail (OWNER_BOOTSTRAP_EMAIL), AuthDisableAPIKey (AUTH_DISABLE_API_KEY default false), Argon2Memory (ARGON2_MEMORY 65536), Argon2Time (ARGON2_TIME 1); const SessionCookie="session", CsrfCookie="csrf_token". APIKey/OwnerID se conservan.
-- [ ] 6.2 Actualizar `.env.example`: documentar COOKIE_SECURE=false en dev, SESSION_TTL, OWNER_BOOTSTRAP_EMAIL, AUTH_DISABLE_API_KEY.
+- [x] 6.1 Ampliar `backend/internal/config/config.go`: SessionTTL (SESSION_TTL default 24h), CookieSecure (COOKIE_SECURE default true), OwnerBootstrapEmail (OWNER_BOOTSTRAP_EMAIL), AuthDisableAPIKey (AUTH_DISABLE_API_KEY default false), Argon2Memory (ARGON2_MEMORY 65536), Argon2Time (ARGON2_TIME 1); const SessionCookie="session", CsrfCookie="csrf_token". APIKey/OwnerID se conservan.
+- [x] 6.2 Actualizar `.env.example`: documentar COOKIE_SECURE=false en dev, SESSION_TTL, OWNER_BOOTSTRAP_EMAIL, AUTH_DISABLE_API_KEY.
 - [ ] 6.3 Modificar `cmd/api/main.go`: cadena global CORS→Logging→Recover→Session→RateLimit; grupo owner RequireAuth→RequireRole(OWNER)→CSRF; /api/auth/me fuera del grupo; logout con CSRF; goroutine CleanupExpiredSessions (ticker 1h, cancela con ctx).
 
 ## Phase 7: Frontend API
@@ -88,7 +88,7 @@ Chain strategy: stacked-to-main
 
 ## Phase 9: Tests + limpieza
 
-- [ ] 9.1 Crear `backend/internal/service/password_test.go` y `auth_test.go` (fake store, sin DB): roundtrip/mismatch hash, longitud NewToken, Register normalización/validación/duplicado/role bootstrap, Login indistinguible email/password, AuthenticateSession expirada→ErrUnauthorized, ownership→ErrForbidden.
+- [x] 9.1 Crear `backend/internal/service/password_test.go` y `auth_test.go` (fake store, sin DB): roundtrip/mismatch hash, longitud NewToken, Register normalización/validación/duplicado/role bootstrap, Login indistinguible email/password, AuthenticateSession expirada→ErrUnauthorized. (Slice 1: parte de service completa. El caso ownership→ErrForbidden queda pendiente con slice 2, cuando el service verifique owner_id — tasks 5.4/5.5.)
 - [ ] 9.2 Crear `backend/internal/http/handlers/auth_test.go` + `auth_router_test.go` (fake service, httptest): códigos /auth/* (201/409/401/204), cookies seteadas, transición dual X-API-Key+sesión, CSRF 403 csrf_invalid, USER→ruta owner 403.
 - [ ] 9.3 Extender `backend/internal/http/middleware/middleware_test.go`: Session actor vs anónimo, RequireRole, CSRF omitido/válido, RateLimit tier por actor.
 - [ ] 9.4 Actualizar `frontend/src/api/client.test.ts` (credentials include, header CSRF, manejo 401, sin localStorage) + crear `src/auth/auth.test.tsx` (guard redirige sin user).
