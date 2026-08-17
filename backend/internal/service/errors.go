@@ -36,6 +36,19 @@ var ErrSlotUnavailable = &ConflictError{
 // ErrNotFound is returned when a store is not found by slug. It maps to 404.
 var ErrNotFound = errors.New("not found")
 
+// ErrUnauthorized is returned when the request lacks a valid authenticated
+// session (or API key). It maps to HTTP 401 with error.code = "unauthorized".
+var ErrUnauthorized = errors.New("unauthorized")
+
+// ErrForbidden is returned when the authenticated actor lacks permission for
+// the requested resource. It maps to HTTP 403 with error.code = "forbidden".
+var ErrForbidden = errors.New("forbidden")
+
+// ErrInvalidCredentials is returned by Login for both unknown emails and wrong
+// passwords, so callers cannot tell which one failed (no account
+// enumeration). It maps to HTTP 401 with error.code = "invalid_credentials".
+var ErrInvalidCredentials = errors.New("invalid credentials")
+
 // notFoundIfNoRows translates pgx.ErrNoRows into ErrNotFound so the HTTP layer
 // can map both "store missing" and "appointment missing" to a single 404.
 func notFoundIfNoRows(err error) error {
