@@ -1,22 +1,36 @@
 # Spec: owner-portal
 
-## MODIFIED Requirements
+## Requirements
 
 ### Requirement: Owner authentication via API key stub
 
-Dashboard and owner routes SHALL authenticate with the static API key in `X-API-Key`. This is a temporary stub until the real auth (Google OAuth) phase; the frontend contract SHALL remain compatible with replacing the key with a real token later.
+El dashboard y las rutas owner SHALL autenticarse con sesión server-side (cookie httpOnly) y exigir `role = OWNER`. Durante la transición dual, el backend MAY aceptar `X-API-Key` (mapeada al owner bootstrap) si no hay sesión válida, deshabilitable con `AUTH_DISABLE_API_KEY`. El frontend SHALL usar `credentials: "include"`, SHALL redirigir a `/login` ante `401` y MUST NOT persistir credenciales en `localStorage`.
 
-#### Scenario: Dashboard loads with API key
+(Previously: la autenticación era un stub con `X-API-Key` estática y `OWNER_ID` fijo del config.)
 
-- **Given** the SPA is configured with the owner API key
-- **When** the dashboard requests owner data
-- **Then** requests SHALL include `X-API-Key` and SHALL succeed
+#### Scenario: Dashboard autenticado por sesión
 
-#### Scenario: Dashboard without API key is rejected
+- **Given** un usuario `role = OWNER` con cookie de sesión válida
+- **When** el dashboard solicita datos owner
+- **Then** la petición procede con `200`
 
-- **Given** a request without a valid `X-API-Key`
-- **When** the owner API validates it
-- **Then** the response SHALL be `401`
+#### Scenario: Sin sesión ni API key
+
+- **Given** un request sin cookie de sesión válida ni `X-API-Key`
+- **When** se solicita una ruta owner
+- **Then** responde `401` y la SPA redirige a `/login`
+
+#### Scenario: Transición dual con API key
+
+- **Given** `AUTH_DISABLE_API_KEY=false` y sin cookie de sesión
+- **When** un request incluye `X-API-Key` válida
+- **Then** se mapea al owner bootstrap y procede con advertencia de deprecación
+
+#### Scenario: API key deshabilitada
+
+- **Given** `AUTH_DISABLE_API_KEY=true`
+- **When** un request usa `X-API-Key`
+- **Then** responde `401`
 
 ### Requirement: Owner store CRUD
 
@@ -75,3 +89,19 @@ The dashboard SHALL list the owner's stores with their business hours and blocke
 - **Given** an owner with two stores
 - **When** the dashboard requests `GET /api/stores`
 - **Then** the response SHALL contain both stores with hours and blocked dates
+
+### Requirement: Guard de ruta del dashboard
+
+La SPA MUST proteger `/dashboard` con un guard de sesión: sin usuario autenticado SHALL redirigir a `/login`. El usuario actual MUST obtenerse de `GET /api/auth/me` al cargar.
+
+#### Scenario: Usuario no autenticado accede a /dashboard
+
+- **Given** sin sesión activa
+- **When** la SPA navega a `/dashboard`
+- **Then** redirige a `/login`
+
+#### Scenario: OWNER accede a /dashboard
+
+- **Given** un OWNER autenticado
+- **When** navega a `/dashboard`
+- **Then** la ruta se renderiza con los datos del owner

@@ -1,6 +1,6 @@
 # Spec: go-api
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: REST API in Go with chi
 
@@ -14,23 +14,39 @@ The backend SHALL expose a REST API implemented in Go using `github.com/go-chi/c
 
 ### Requirement: JSON error contract
 
-All API error responses SHALL use a consistent JSON shape: `{"error": {"code": "<code>", "message": "<message>", "field": "<field>"}}` where `field` is optional. HTTP status codes SHALL be: `400` validation, `401` missing/invalid API key, `404` not found, `409` slot unavailable, `429` rate limited, `500` internal.
+El contrato `{"error":{code,message,field}}` SHALL mantenerse; `field` opcional. Códigos: `400` validación, `401` credenciales inválidas o sesión ausente/inválida/vencida, `403` rol insuficiente, ownership fallido o CSRF inválido, `404` no encontrado, `409` slot no disponible, `429` rate limit, `500` interno.
 
-#### Scenario: Validation error shape
+(Previously: `401` cubría solo "missing/invalid API key" y no existía `403`.)
 
-- **Given** a request with an invalid field
-- **When** the API validates it
-- **Then** the response SHALL be `400` with `error.code`, `error.message`, and `error.field` populated
+#### Scenario: Error de sesión
+
+- **Given** una cookie de sesión vencida o ausente
+- **When** se solicita una ruta protegida
+- **Then** responde `401` con `error.code = "unauthorized"`
+
+#### Scenario: Rol insuficiente
+
+- **Given** un usuario `USER` autenticado
+- **When** solicita una ruta owner
+- **Then** responde `403` con `error.code = "forbidden"`
 
 ### Requirement: CORS and rate limiting middleware
 
-The API SHALL apply CORS middleware allowing the frontend origin (configurable via `CORS_ORIGINS`), and an in-memory rate limiter: anonymous clients 10 requests/minute, owner/API-key clients 30 requests/minute, with `Retry-After` header on `429`.
+Con `credentials: "include"`, el CORS MUST usar orígenes exactos de `CORS_ORIGINS` con `Access-Control-Allow-Credentials: true`; MUST NOT usar `Access-Control-Allow-Origin: *`. El rate limiter in-memory SHALL clasificar en tier owner (30 requests/min) a los clientes autenticados por sesión y anónimos (10 requests/min) a los demás; `429` SHALL incluir `Retry-After`.
 
-#### Scenario: Anonymous client exceeds rate limit
+(Previously: CORS sin credenciales; el tier owner clasificaba solo por API key.)
 
-- **Given** an anonymous client
-- **When** they make 11 requests in under a minute
-- **Then** the 11th request SHALL return `429` with a `Retry-After` header
+#### Scenario: Sesión owner excede el rate limit
+
+- **Given** un OWNER autenticado por sesión
+- **When** supera 30 requests en un minuto
+- **Then** responde `429` con `Retry-After`
+
+#### Scenario: Anónimo en endpoint de auth
+
+- **Given** un cliente anónimo
+- **When** hace 11 requests a `/api/auth/*` en un minuto
+- **Then** el 11º responde `429` con `Retry-After`
 
 ### Requirement: Paginated response contract
 
@@ -38,16 +54,24 @@ List endpoints SHALL return `{"data": [...], "page": <n>, "limit": <n>, "total":
 
 ### Requirement: API key stub for owner routes
 
-Owner routes SHALL require a static API key in the `X-API-Key` header, configured via env `API_KEY`. Requests without a matching key SHALL return `401`.
+Durante la transición, las rutas owner SHALL aceptar una sesión válida; si no hay sesión, MAY aceptar `X-API-Key` configurada por env `API_KEY`. La API key MUST mapearse al owner bootstrap y el fallback MUST deshabilitarse con `AUTH_DISABLE_API_KEY=true`. Sin sesión ni API key válida MUST responder `401`.
 
-#### Scenario: Owner route without key is rejected
+(Previously: las rutas owner requerían exclusivamente la API key estática.)
 
-- **Given** no `X-API-Key` header
-- **When** a client requests an owner route
-- **Then** the response SHALL be `401` with `error.code = "unauthorized"`
+#### Scenario: Ruta owner con sesión válida
 
-#### Scenario: Owner route with valid key is allowed
+- **Given** un OWNER con cookie de sesión
+- **When** solicita una ruta owner sin `X-API-Key`
+- **Then** procede con `200`
 
-- **Given** an `X-API-Key` header matching the configured key
-- **When** a client requests an owner route
-- **Then** the request SHALL proceed past authentication
+#### Scenario: Ruta owner sin credenciales
+
+- **Given** sin sesión y sin `X-API-Key`
+- **When** se solicita una ruta owner
+- **Then** responde `401` `unauthorized`
+
+#### Scenario: Fallback con API key válida
+
+- **Given** sin sesión y `AUTH_DISABLE_API_KEY=false`
+- **When** se envía `X-API-Key` válida
+- **Then** procede mapeando al owner bootstrap

@@ -2,94 +2,181 @@
 
 ## Purpose
 
-Authentication and role-based route protection for the Appointments app. Auth.js v5 with Google OAuth provides identity; JWT carries the user's role; `proxy.ts` enforces access rules per route prefix.
+Autenticación con email y password y protección de rutas por rol para la Appointments app. La identidad se resuelve con sesiones server-side en el backend Go (cookie httpOnly, hash SHA-256 del token en `sessions`); el rol se persiste en `users.role` y se resuelve server-side. El frontend SPA consume `GET /api/auth/me` y protege `/dashboard` con un guard de ruta.
 
 ## Requirements
 
-### Requirement: Auth.js Configuration
+### Requirement: Registro con email y password
 
-The system MUST configure Auth.js v5 (`src/auth.ts`) with `PrismaAdapter`, the Google provider, and `jwt` strategy. The configuration MUST export a single `auth` object consumable by both the API handler and the proxy.
+El sistema MUST exponer `POST /api/auth/register` aceptando `name`, `email` y `password`. MUST normalizar el email a minúsculas, validar formato y password de al menos 8 caracteres, y hashear con **Argon2id** antes de persistir. MUST crear el usuario con `role = USER` y `email_verified = false`; MUST NOT asignar `OWNER`/`ADMIN` desde input público. La verificación de email es no funcional: `verification_token` se genera pero no bloquea login.
 
-#### Scenario: Valid Auth.js bootstrap
+- **Codes**: `201` creado; `400` validación con `field`; `409` `email_taken` con `field=email`.
 
-- GIVEN `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` are set in environment
-- WHEN the application starts
-- THEN Auth.js initializes without errors and exposes `auth()`, `signIn()`, `signOut()`, and handlers
+#### Scenario: Registro exitoso
 
-#### Scenario: Missing environment variables
+- GIVEN email y password válidos y no registrados
+- WHEN `POST /api/auth/register`
+- THEN responde `201` con `{id, name, email, role}` y sin hash
+- AND el usuario queda `role = USER` salvo bootstrap OWNER
 
-- GIVEN one or more required auth environment variables are absent
-- WHEN the application starts
-- THEN Auth.js logs a configuration error and the signin page renders a graceful failure message
+#### Scenario: Email duplicado
 
-### Requirement: Role Injection
+- GIVEN un email ya registrado
+- WHEN `POST /api/auth/register`
+- THEN responde `409` con `error.code = "email_taken"` y `field = "email"`
 
-The JWT callback MUST read the user's `role` from the database and embed it in the JWT token. The session callback MUST expose `token.role` as `session.user.role`. If the user has no role assigned, the callback MUST default to `USER`.
+#### Scenario: Password inválido
 
-#### Scenario: Authenticated user with OWNER role
+- GIVEN password de 4 caracteres
+- WHEN `POST /api/auth/register`
+- THEN responde `400` con `field = "password"`
 
-- GIVEN a user with `role: OWNER` in the database signs in via Google
-- WHEN the JWT callback executes
-- THEN the token contains `role: OWNER`
-- AND the session callback exposes `session.user.role` as `OWNER`
+### Requirement: Login con sesión server-side
 
-#### Scenario: First-time Google login (no prior role)
+`POST /api/auth/login` (`email`, `password`) MUST verificar el hash Argon2id. Con credenciales válidas MUST crear una sesión (token aleatorio de 32 bytes, SHA-256 persistido, `expires_at` futuro configurable) y fijar cookie `HttpOnly`, `Secure` (producción), `SameSite=Lax`. Credenciales inválidas MUST responder `401` con `error.code = "invalid_credentials"` e idéntico mensaje para email inexistente o password incorrecto (sin enumeración de cuentas).
 
-- GIVEN a Google account not yet linked to any user record
-- WHEN the user signs in for the first time
-- THEN PrismaAdapter creates the User record
-- AND the JWT callback assigns `role: USER` as default
+- **Codes**: `200` con perfil; `400` validación; `401` `invalid_credentials`.
 
-### Requirement: Route Protection
+#### Scenario: Login válido
 
-The system MUST export a `proxy()` function from `src/proxy.ts` that intercepts requests and enforces access rules. Unauthenticated requests to protected routes MUST redirect to `/api/auth/signin`.
+- GIVEN un usuario registrado con password correcto
+- WHEN `POST /api/auth/login`
+- THEN responde `200` con perfil y cookie de sesión
+- AND `sessions` guarda el token hasheado con `expires_at` futuro
 
-| Path Pattern | Required Role | No-Role Behavior |
-|---|---|---|
-| `/admin/*` | `ADMIN` | Redirect to `/` |
-| `/dashboard/*` | `OWNER` | Redirect to `/onboarding` |
-| `/perfil/*` | Any authenticated user | Redirect to `/api/auth/signin` |
+#### Scenario: Password incorrecto
 
-#### Scenario: Unauthenticated user accesses /dashboard
+- GIVEN un usuario registrado
+- WHEN `POST /api/auth/login` con password incorrecto
+- THEN responde `401` con `error.code = "invalid_credentials"`
 
-- GIVEN no active session exists
-- WHEN the user requests `/dashboard`
-- THEN the proxy redirects to `/api/auth/signin`
+### Requirement: Logout
 
-#### Scenario: USER role accesses /admin
+`POST /api/auth/logout` MUST invalidar la sesión actual (eliminar la fila) y limpiar la cookie. SHALL responder `204` incluso sin sesión válida (idempotente).
 
-- GIVEN an authenticated user with `role: USER`
-- WHEN the user requests `/admin/settings`
-- THEN the proxy redirects to `/`
+#### Scenario: Logout con sesión
 
-#### Scenario: OWNER accesses /dashboard
+- GIVEN una sesión válida
+- WHEN `POST /api/auth/logout`
+- THEN la fila de sesión se elimina y la cookie se invalida
+- AND `GET /api/auth/me` responde `401`
 
-- GIVEN an authenticated user with `role: OWNER`
-- WHEN the user requests `/dashboard`
-- THEN the request proceeds normally
+### Requirement: Perfil actual (`/api/auth/me`)
 
-#### Scenario: OWNER without role accesses /dashboard
+`GET /api/auth/me` MUST devolver `{id, name, email, role}` del actor autenticado; sin sesión válida MUST responder `401` `unauthorized`.
 
-- GIVEN an authenticated user with no role assigned (null)
-- WHEN the user requests `/dashboard`
-- THEN the proxy redirects to `/onboarding`
+- **Codes**: `200` con perfil; `401` `unauthorized`.
 
-### Requirement: API Route Handler
+#### Scenario: Me autenticado
 
-The system MUST provide GET and POST handlers at `src/app/api/auth/[...nextauth]/route.ts` that delegate to Auth.js.
+- GIVEN una cookie de sesión válida
+- WHEN `GET /api/auth/me`
+- THEN responde `200` con el perfil y `role`
 
-#### Scenario: OAuth callback
+#### Scenario: Me anónimo
 
-- GIVEN the user completes Google OAuth consent
-- WHEN Google redirects to `/api/auth/callback/google`
-- THEN Auth.js processes the callback, creates/updates the user, and redirects to the app
+- GIVEN sin cookie de sesión
+- WHEN `GET /api/auth/me`
+- THEN responde `401` `unauthorized`
 
-### Requirement: Session Provider
+### Requirement: Middleware de sesión
 
-The root layout SHOULD wrap the application with `SessionProvider` so client components can access session data via `useSession()`.
+El middleware MUST resolver el actor desde la cookie httpOnly en cada request protegido, comparando el SHA-256 del token contra `sessions`. Sesión ausente, vencida o revocada MUST responder `401`. El sistema SHOULD limpiar periódicamente las sesiones expiradas.
 
-#### Scenario: Client component reads session
+#### Scenario: Sesión vencida
 
-- GIVEN a user is authenticated
-- WHEN a client component calls `useSession()`
-- THEN it receives the session object including `user.role`
+- GIVEN una sesión con `expires_at` en el pasado
+- WHEN un request protegido la presenta
+- THEN responde `401` `unauthorized`
+
+### Requirement: Middleware de rol
+
+Rutas owner MUST exigir `role = OWNER`; rutas admin futuras, `ADMIN`. Actor con rol insuficiente MUST recibir `403` `forbidden`.
+
+#### Scenario: USER accede a ruta owner
+
+- GIVEN un usuario con `role = USER` y sesión válida
+- WHEN solicita una ruta del grupo owner
+- THEN responde `403` `forbidden`
+
+### Requirement: Autorización por `owner_id`
+
+Cada endpoint que recibe `storeID` MUST verificar que `stores.owner_id` coincide con el actor autenticado; si no, `403` `forbidden`. La autorización por ownership no MUST limitarse al middleware de ruta.
+
+#### Scenario: OWNER accede a store ajeno
+
+- GIVEN un OWNER con sesión válida
+- WHEN solicita un endpoint owner con `storeID` de otra tienda
+- THEN responde `403` `forbidden`
+
+### Requirement: Bootstrap de OWNER
+
+El rol OWNER MUST asignarse únicamente por bootstrap explícito (`OWNER_BOOTSTRAP_EMAIL`) o migración/operación. MUST NOT promover automáticamente `USER → OWNER` al crear una tienda.
+
+#### Scenario: Registro con email de bootstrap
+
+- GIVEN `OWNER_BOOTSTRAP_EMAIL = owner@example.com`
+- WHEN un usuario se registra con ese email
+- THEN su `role` queda `OWNER`
+
+#### Scenario: Creación de tienda sin promoción
+
+- GIVEN un `USER` autenticado
+- WHEN intenta crear una tienda
+- THEN responde `403` y su rol sigue siendo `USER`
+
+### Requirement: Protección CSRF
+
+Las mutaciones autenticadas por cookie (POST/PATCH/PUT/DELETE) MUST incluir un token CSRF de doble envío (cookie + header `X-CSRF-Token`) validado por el backend; token ausente o inválido MUST responder `403` `csrf_invalid`. `POST /api/auth/login` y `POST /api/auth/register` (públicos) quedan exentos.
+
+#### Scenario: Mutación sin token CSRF
+
+- GIVEN una sesión válida
+- WHEN `POST` a un endpoint owner sin `X-CSRF-Token`
+- THEN responde `403` `csrf_invalid`
+
+### Requirement: Transición dual con `X-API-Key`
+
+Durante la transición, si no hay cookie de sesión válida, el backend MAY aceptar `X-API-Key` en rutas owner, mapeándola al owner bootstrap y registrando advertencia de deprecación. La sesión SHALL tener prioridad sobre la API key. `AUTH_DISABLE_API_KEY=true` MUST deshabilitar el fallback (`401`).
+
+#### Scenario: Fallback a API key
+
+- GIVEN sin cookie de sesión y `AUTH_DISABLE_API_KEY=false`
+- WHEN un request envía `X-API-Key` válida
+- THEN se mapea al owner bootstrap y el request procede
+
+#### Scenario: API key deshabilitada
+
+- GIVEN `AUTH_DISABLE_API_KEY=true`
+- WHEN un request usa `X-API-Key`
+- THEN responde `401` `unauthorized`
+
+### Requirement: Booking anónimo PENDING
+
+El flujo público de reserva MUST permanecer anónimo y con estado `PENDING`; la autenticación MUST NOT alterar el estado de las reservas en esta iteración.
+
+#### Scenario: Reserva anónima
+
+- GIVEN un visitante sin sesión
+- WHEN reserva un slot
+- THEN la cita se crea con estado `PENDING`
+
+### Requirement: Migración de datos
+
+La migración MUST ampliar `users` de forma aditiva y no destructiva: `role` NOT NULL default `'USER'`, `password_hash` NULL, `email_verified` default `false`, `verification_token` NULL. MUST crear `sessions` (`id`, `user_id` FK, `token_hash` unique, `expires_at`, `created_at`). Debe poder revertirse sin pérdida de datos existentes.
+
+#### Scenario: Usuario pre-existente
+
+- GIVEN filas existentes en `users` sin credenciales
+- WHEN se aplica la migración
+- THEN las filas se conservan con `role = USER` y `password_hash = NULL`
+
+### Requirement: Tests de autenticación
+
+El backend MUST incluir tests unitarios de service (hashing, login/logout, validación de sesión, CSRF, ownership) y de integración HTTP (transición dual, códigos de error). El frontend MUST incluir tests Vitest para el cliente API (credenciales, manejo de `401`, retiro de `localStorage`) y el guard de ruta.
+
+#### Scenario: Pruebas de transición dual
+
+- GIVEN tests Go y Vitest existentes que asumen `X-API-Key`
+- WHEN se agrega la sesión por cookie
+- THEN ambos mecanismos se prueban en coexistencia antes de deshabilitar la API key
