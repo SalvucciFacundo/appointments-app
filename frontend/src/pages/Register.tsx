@@ -23,8 +23,8 @@ export default function Register() {
     setSubmitting(true)
     try {
       await register({ name, email, password })
-      addToast("Cuenta creada — iniciá sesión para continuar", "success")
-      navigate("/login")
+      addToast("Cuenta creada. Bienvenido — configurá tu primer comercio.", "success")
+      navigate("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo crear la cuenta")
     } finally {

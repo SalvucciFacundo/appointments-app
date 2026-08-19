@@ -46,6 +46,16 @@ func (h *Handlers) Register(w http.ResponseWriter, r *http.Request) {
 		respondError(w, err)
 		return
 	}
+	// Auto-login: issue a session so the new account is signed in immediately
+	// instead of forcing a second login.
+	res, err := h.svc.IssueSession(r.Context(), user.ID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if res.RawToken != "" {
+		h.setSessionCookies(w, res.RawToken, res.CSRFToken, res.ExpiresAt)
+	}
 	writeJSON(w, http.StatusCreated, userProfile{ID: user.ID, Name: user.Name, Email: user.Email, Role: user.Role})
 }
 

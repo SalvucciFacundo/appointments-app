@@ -85,24 +85,42 @@ func (s *Service) Login(ctx context.Context, email, password string) (store.User
 		return store.User{}, SessionResult{}, ErrInvalidCredentials
 	}
 
-	rawToken, err := NewToken()
+	res, err := s.newSession(ctx, user.ID)
 	if err != nil {
 		return store.User{}, SessionResult{}, err
+	}
+	return user, res, nil
+}
+
+// IssueSession creates a session for the given user id and returns the raw
+// token, CSRF token, and expiry for the HTTP layer to set as cookies. It is
+// used to sign a user in right after registration (auto-login).
+func (s *Service) IssueSession(ctx context.Context, userID string) (SessionResult, error) {
+	return s.newSession(ctx, userID)
+}
+
+// newSession creates a session for the given user and returns the raw token,
+// CSRF token, and expiry. The raw token is stored hashed (SHA-256); the CSRF
+// token is bound to the same session for double-submit validation.
+func (s *Service) newSession(ctx context.Context, userID string) (SessionResult, error) {
+	rawToken, err := NewToken()
+	if err != nil {
+		return SessionResult{}, err
 	}
 	csrfToken, err := NewCSRFToken()
 	if err != nil {
-		return store.User{}, SessionResult{}, err
+		return SessionResult{}, err
 	}
 	expiresAt := time.Now().Add(s.opts.SessionTTL)
 	if _, err := s.auth.CreateSession(ctx, store.CreateSessionInput{
-		UserID:    user.ID,
+		UserID:    userID,
 		TokenHash: sha256Hex(rawToken),
 		CSRFToken: csrfToken,
 		ExpiresAt: expiresAt,
 	}); err != nil {
-		return store.User{}, SessionResult{}, err
+		return SessionResult{}, err
 	}
-	return user, SessionResult{RawToken: rawToken, CSRFToken: csrfToken, ExpiresAt: expiresAt}, nil
+	return SessionResult{RawToken: rawToken, CSRFToken: csrfToken, ExpiresAt: expiresAt}, nil
 }
 
 // Logout invalidates the session for the given raw token. It is idempotent: an

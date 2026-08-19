@@ -50,6 +50,15 @@ func NewRouter(cfg *config.Config, svc handlers.Service) http.Handler {
 		r.Get("/me", h.Me)
 	})
 
+	// Store creation is open to any authenticated user (session or API key):
+	// a newly registered USER creates their first store, which promotes them to
+	// OWNER (Service.CreateStore → PromoteToOwner). It still requires CSRF.
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.RequireAuth(svc, cfg.APIKey, cfg.AuthDisableAPIKey))
+		r.Use(middleware.CSRF())
+		r.Post("/api/stores", h.CreateStore)
+	})
+
 	// Owner routes: require authentication (session or X-API-Key during the
 	// transition), the OWNER role, and CSRF on cookie-authenticated mutations.
 	r.Group(func(r chi.Router) {
@@ -58,7 +67,6 @@ func NewRouter(cfg *config.Config, svc handlers.Service) http.Handler {
 		r.Use(middleware.CSRF())
 
 		r.Get("/api/stores", h.ListOwnerStores)
-		r.Post("/api/stores", h.CreateStore)
 		r.Get("/api/stores/{id}", h.GetStore)
 		r.Put("/api/stores/{id}", h.UpdateStore)
 		r.Put("/api/stores/{id}/hours", h.UpdateHours)
