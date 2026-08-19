@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { listPublicStores } from "@/api/stores"
 import type { StoreCard as StoreCardData } from "@/api/types"
+import { useAuth } from "@/auth/AuthContext"
 import StoreCard from "@/components/ui/StoreCard"
 import SearchBar from "@/components/ui/SearchBar"
 import Pagination from "@/components/ui/Pagination"
@@ -25,6 +26,7 @@ function StoreGridSkeleton() {
 }
 
 export default function Home() {
+  const { user, loading: authLoading, logout } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const specialty = searchParams.get("specialty") ?? ""
   const query = searchParams.get("q") ?? ""
@@ -94,6 +96,40 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 animate-fadeIn">
+      {/* Top navigation */}
+      <nav className="mb-8 flex items-center justify-between">
+        <Link to="/" className="text-lg font-bold text-[var(--text-primary)]">
+          Turnos
+        </Link>
+        <div className="flex items-center gap-3">
+          {!authLoading &&
+            (user ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="rounded-[var(--radius-md)] bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                >
+                  Salir
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="rounded-[var(--radius-md)] bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+              >
+                Ingresar
+              </Link>
+            ))}
+        </div>
+      </nav>
+
       {/* Landing Hero Section */}
       {isFirstVisit && (
         <div className="relative mb-10 overflow-hidden rounded-[var(--radius-2xl)] bg-gradient-to-br from-[var(--bg-surface)] via-[var(--bg-surface)] to-[var(--accent-light)] border border-[var(--border-subtle)] p-8 sm:p-10">

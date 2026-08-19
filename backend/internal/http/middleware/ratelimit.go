@@ -15,8 +15,8 @@ import (
 // Rate limit configuration: owner clients (valid X-API-Key) get a higher
 // per-minute allowance than anonymous clients, per the design spec.
 const (
-	AnonymousRateLimit = 10
-	OwnerRateLimit     = 30
+	AnonymousRateLimit = 60
+	OwnerRateLimit     = 120
 	rateLimitWindow    = time.Minute
 )
 
