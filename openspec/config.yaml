@@ -1,12 +1,12 @@
 schema: spec-driven
 
 context: |
-  Tech stack: Next.js (App Router), TypeScript, PostgreSQL + Prisma ORM
-  Auth: Auth.js (NextAuth) with Google Provider
-  Notifications: Resend (email), Meta Cloud API (WhatsApp), Google Calendar API
-  Styling: Vanilla CSS / CSS Modules
+  Tech stack: React 19 SPA (Vite + TypeScript + Tailwind v4) + Go 1.26 API (chi + pgx v5 + goose) + PostgreSQL
+  Frontend: frontend/ — Vite SPA, react-router, API layer with X-API-Key header
+  Backend: backend/ — layered (http → service → store), parametrized pgx queries, timezone-aware slots
+  Auth: stub — static API_KEY + fixed OWNER_ID (single-owner dashboard)
   Architecture: Multitenant SaaS B2B2C — Appointments for service stores
-  Testing: Pre-project (no test runner configured yet)
+  Testing: Go unit tests (backend, pure service), Vitest (frontend)
   Language: Spanish (openspec docs), English (code artifacts)
 
 strict_tdd: false
@@ -20,7 +20,7 @@ rules:
     - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
     - Account for anonymous vs authenticated user flows
   design:
-    - Include sequence diagrams for complex flows (booking, notifications)
+    - Include sequence diagrams for complex flows (booking, auth)
     - Document architecture decisions with rationale
     - Consider timezone handling across stores
   tasks:
@@ -28,14 +28,14 @@ rules:
     - Keep tasks completable in one session
   apply:
     guidelines:
-      - Follow Next.js App Router conventions
-      - Use Prisma schema as source of truth for data model
-      - Prefer Server Components where possible
+      - Follow Go layered architecture (http → service → store) in backend/
+      - Use parametrized pgx queries, never SQL interpolation
+      - Keep the service layer pure and unit-testable
     tdd: false
-    test_command: ""
+    test_command: "make test"
   verify:
-    test_command: ""
-    build_command: "next build"
+    test_command: "make test"
+    build_command: "make build"
     coverage_threshold: 0
   archive:
     - Warn before merging destructive deltas

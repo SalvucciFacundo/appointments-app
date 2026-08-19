@@ -31,6 +31,17 @@ func ValidateDayOfWeek(value int) error {
 	return nil
 }
 
+// emailRe matches a pragmatic email shape: local@domain.tld.
+var emailRe = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+
+// ValidateEmail returns an error if value is not a plausible email address.
+func ValidateEmail(value string) error {
+	if !emailRe.MatchString(value) {
+		return errors.New("invalid email format")
+	}
+	return nil
+}
+
 // ValidateFutureDate returns an error if dateStr is not a valid YYYY-MM-DD
 // date, or if it is not today or later.
 func ValidateFutureDate(dateStr string) error {

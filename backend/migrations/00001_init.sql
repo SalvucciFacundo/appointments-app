@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TYPE appointment_status AS ENUM ('PENDING','CONFIRMED','CANCELLED','COMPLETED');
 
 CREATE TABLE users (
@@ -65,3 +66,11 @@ CREATE TABLE appointments (
 );
 CREATE INDEX idx_appointments_store_datetime ON appointments(store_id, date_time);
 CREATE INDEX idx_appointments_user ON appointments(user_id);
+
+-- +goose Down
+DROP TABLE IF EXISTS appointments;
+DROP TABLE IF EXISTS blocked_dates;
+DROP TABLE IF EXISTS business_hours;
+DROP TABLE IF EXISTS stores;
+DROP TABLE IF EXISTS users;
+DROP TYPE IF EXISTS appointment_status;
