@@ -33,7 +33,11 @@ func (h *Handlers) UpdateHours(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	result, err := h.svc.ReplaceBusinessHours(r.Context(), chi.URLParam(r, "id"), hours)
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
+	result, err := h.svc.ReplaceBusinessHours(r.Context(), actor.ID, chi.URLParam(r, "id"), hours)
 	if err != nil {
 		respondError(w, err)
 		return

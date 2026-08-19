@@ -110,7 +110,11 @@ func (h *Handlers) GetPublicStore(w http.ResponseWriter, r *http.Request) {
 
 // ListOwnerStores handles GET /api/stores (owner).
 func (h *Handlers) ListOwnerStores(w http.ResponseWriter, r *http.Request) {
-	stores, err := h.svc.ListStoresByOwner(r.Context(), h.ownerID)
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
+	stores, err := h.svc.ListStoresByOwner(r.Context(), actor.ID)
 	if err != nil {
 		respondError(w, err)
 		return
@@ -125,7 +129,11 @@ func (h *Handlers) CreateStore(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "validation", "invalid JSON body", "")
 		return
 	}
-	st, err := h.svc.CreateStore(r.Context(), h.ownerID, store.CreateStoreInput{
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
+	st, err := h.svc.CreateStore(r.Context(), actor.ID, store.CreateStoreInput{
 		Name:        body.Name,
 		Description: body.Description,
 		Address:     body.Address,
@@ -143,7 +151,11 @@ func (h *Handlers) CreateStore(w http.ResponseWriter, r *http.Request) {
 
 // GetStore handles GET /api/stores/{id} (owner).
 func (h *Handlers) GetStore(w http.ResponseWriter, r *http.Request) {
-	detail, err := h.svc.GetStore(r.Context(), chi.URLParam(r, "id"))
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
+	detail, err := h.svc.GetStore(r.Context(), actor.ID, chi.URLParam(r, "id"))
 	if err != nil {
 		respondError(w, err)
 		return
@@ -172,7 +184,11 @@ func (h *Handlers) UpdateStore(w http.ResponseWriter, r *http.Request) {
 		MaxSlotsPerDay:      body.MaxSlotsPerDay,
 		CancelationLimit:    body.CancelationLimit,
 	}
-	st, err := h.svc.UpdateStore(r.Context(), chi.URLParam(r, "id"), in)
+	actor := h.actorOrUnauthorized(w, r)
+	if actor == nil {
+		return
+	}
+	st, err := h.svc.UpdateStore(r.Context(), actor.ID, chi.URLParam(r, "id"), in)
 	if err != nil {
 		respondError(w, err)
 		return

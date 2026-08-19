@@ -11,7 +11,10 @@ import (
 
 func TestCreateAppointment_DefaultValidates(t *testing.T) {
 	f := &fakeService{}
-	f.createAppointment = func(_ context.Context, storeID string, in service.CreateAppointmentInput) (store.Appointment, error) {
+	f.createAppointment = func(_ context.Context, actorID, storeID string, in service.CreateAppointmentInput) (store.Appointment, error) {
+		if actorID != "owner-1" {
+			t.Errorf("actorID = %q, want owner-1 (bootstrap actor)", actorID)
+		}
 		if storeID != "s1" {
 			t.Errorf("storeID = %q, want s1", storeID)
 		}
@@ -32,7 +35,7 @@ func TestCreateAppointment_DefaultValidates(t *testing.T) {
 func TestCreateAppointment_ForceForwarded(t *testing.T) {
 	f := &fakeService{}
 	var gotForce bool
-	f.createAppointment = func(_ context.Context, storeID string, in service.CreateAppointmentInput) (store.Appointment, error) {
+	f.createAppointment = func(_ context.Context, _ string, _ string, in service.CreateAppointmentInput) (store.Appointment, error) {
 		gotForce = in.Force
 		return store.Appointment{ID: "a1", Status: store.StatusConfirmed}, nil
 	}

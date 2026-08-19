@@ -42,8 +42,30 @@ func run() error {
 	defer pool.Close()
 
 	db := store.New(pool)
-	svc := service.NewService(db)
+	svc := service.NewService(db, service.Options{
+		SessionTTL:     cfg.SessionTTL,
+		BootstrapID:    cfg.OwnerID,
+		BootstrapEmail: cfg.OwnerBootstrapEmail,
+		Argon2Memory:   cfg.Argon2Memory,
+		Argon2Time:     cfg.Argon2Time,
+	})
 	r := apihttp.NewRouter(cfg, svc)
+
+	// Periodically sweep expired sessions; stops with the server context.
+	go func() {
+		ticker := time.NewTicker(time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := svc.CleanupExpiredSessions(ctx); err != nil {
+					slog.Error("session cleanup failed", "error", err)
+				}
+			}
+		}
+	}()
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,

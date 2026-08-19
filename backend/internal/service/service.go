@@ -36,6 +36,7 @@ type authStore interface {
 	EnsureBootstrapOwner(ctx context.Context, id, email string) (store.User, error)
 	CreateSession(ctx context.Context, in store.CreateSessionInput) (store.Session, error)
 	GetActorByTokenHash(ctx context.Context, tokenHash string) (store.Actor, error)
+	GetSessionCSRF(ctx context.Context, tokenHash string) (string, error)
 	DeleteSessionByTokenHash(ctx context.Context, tokenHash string) error
 	DeleteExpiredSessions(ctx context.Context) error
 }

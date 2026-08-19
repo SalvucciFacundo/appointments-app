@@ -45,6 +45,8 @@ func testPool(t *testing.T) *pgxpool.Pool {
 }
 
 // ensureSchema applies the init migration when the stores table is absent.
+// Migrations use the goose single-file format (+goose Up / +goose Down), so
+// only the Up section is executed.
 func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 	var exists bool
 	if err := pool.QueryRow(ctx, `SELECT to_regclass('public.stores') IS NOT NULL`).Scan(&exists); err != nil {
@@ -53,11 +55,12 @@ func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 	if exists {
 		return nil
 	}
-	raw, err := os.ReadFile("../../migrations/00001_init.up.sql")
+	raw, err := os.ReadFile("../../migrations/00001_init.sql")
 	if err != nil {
 		return fmt.Errorf("read migration: %w", err)
 	}
-	for _, stmt := range strings.Split(string(raw), ";") {
+	up := migrationUpSection(string(raw))
+	for _, stmt := range strings.Split(up, ";") {
 		stmt = strings.TrimSpace(stmt)
 		if stmt == "" {
 			continue
@@ -69,6 +72,27 @@ func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 	return nil
 }
 
+// migrationUpSection returns the SQL between the +goose Up and +goose Down
+// directives, dropping any statement directive lines.
+func migrationUpSection(raw string) string {
+	lines := strings.Split(raw, "\n")
+	start, end := -1, len(lines)
+	for i, l := range lines {
+		trimmed := strings.TrimSpace(l)
+		if trimmed == "-- +goose Up" {
+			start = i + 1
+		}
+		if trimmed == "-- +goose Down" && start >= 0 {
+			end = i
+			break
+		}
+	}
+	if start < 0 {
+		return ""
+	}
+	return strings.Join(lines[start:end], "\n")
+}
+
 func firstLine(s string) string {
 	if i := strings.IndexByte(s, '\n'); i >= 0 {
 		return s[:i]
@@ -77,8 +101,9 @@ func firstLine(s string) string {
 }
 
 // newTestStore creates a user + store with a single Monday 09:00-10:00 slot
-// (60-min, maxParallelBookings=1, Buenos Aires) and returns the store.
-func newTestStore(t *testing.T, ctx context.Context, db *store.DB) store.Store {
+// (60-min, maxParallelBookings=1, Buenos Aires) and returns the store together
+// with the owner id the store belongs to.
+func newTestStore(t *testing.T, ctx context.Context, db *store.DB) (store.Store, string) {
 	t.Helper()
 	userID := "test-user-" + uuid.NewString()
 	if _, err := db.Pool().Exec(ctx,
@@ -109,7 +134,7 @@ func newTestStore(t *testing.T, ctx context.Context, db *store.DB) store.Store {
 	}); err != nil {
 		t.Fatalf("replace hours: %v", err)
 	}
-	return st
+	return st, userID
 }
 
 func bookingInput(i int) BookInput {
@@ -127,7 +152,7 @@ func TestBook_HappyPath(t *testing.T) {
 	ctx := context.Background()
 	db := store.New(pool)
 	svc := NewService(db)
-	st := newTestStore(t, ctx, db)
+	st, _ := newTestStore(t, ctx, db)
 
 	appt, err := svc.Book(ctx, st.Slug, bookingInput(1))
 	if err != nil {
@@ -153,7 +178,7 @@ func TestBook_SlotUnavailable(t *testing.T) {
 	ctx := context.Background()
 	db := store.New(pool)
 	svc := NewService(db)
-	st := newTestStore(t, ctx, db)
+	st, _ := newTestStore(t, ctx, db)
 
 	if _, err := svc.Book(ctx, st.Slug, bookingInput(1)); err != nil {
 		t.Fatalf("first Book: %v", err)
@@ -204,7 +229,7 @@ func TestBook_ConcurrentSingleSlot(t *testing.T) {
 	ctx := context.Background()
 	db := store.New(pool)
 	svc := NewService(db)
-	st := newTestStore(t, ctx, db)
+	st, _ := newTestStore(t, ctx, db)
 
 	const n = 10
 	var success, conflict atomic.Int64

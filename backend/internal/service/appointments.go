@@ -26,10 +26,10 @@ type CreateAppointmentInput struct {
 
 // ListAppointments returns a store's appointments, optionally filtered by
 // local date (interpreted in the store's timezone) and status.
-func (s *Service) ListAppointments(ctx context.Context, storeID, date string, status *store.AppointmentStatus) ([]store.Appointment, error) {
-	st, err := s.db.GetStoreByID(ctx, storeID)
+func (s *Service) ListAppointments(ctx context.Context, actorID, storeID, date string, status *store.AppointmentStatus) ([]store.Appointment, error) {
+	st, err := s.requireStoreOwnership(ctx, actorID, storeID)
 	if err != nil {
-		return nil, notFoundIfNoRows(err)
+		return nil, err
 	}
 
 	f := store.AppointmentFilter{}
@@ -60,13 +60,13 @@ func (s *Service) ListAppointments(ctx context.Context, storeID, date string, st
 // CONFIRMED). Availability is validated against business hours, blocked dates,
 // and capacity unless the owner explicitly overrides with Force, in which case
 // the appointment is created regardless (409 otherwise via ErrSlotUnavailable).
-func (s *Service) CreateAppointment(ctx context.Context, storeID string, in CreateAppointmentInput) (store.Appointment, error) {
+func (s *Service) CreateAppointment(ctx context.Context, actorID, storeID string, in CreateAppointmentInput) (store.Appointment, error) {
 	if err := validateManualCreateInput(in); err != nil {
 		return store.Appointment{}, err
 	}
-	st, err := s.db.GetStoreByID(ctx, storeID)
+	st, err := s.requireStoreOwnership(ctx, actorID, storeID)
 	if err != nil {
-		return store.Appointment{}, notFoundIfNoRows(err)
+		return store.Appointment{}, err
 	}
 	d, _ := time.Parse("2006-01-02", in.Date)
 	tm, _ := time.Parse("15:04", in.Time)
@@ -132,9 +132,12 @@ func (s *Service) CreateAppointment(ctx context.Context, storeID string, in Crea
 
 // UpdateAppointmentStatus applies a state-machine action (CONFIRM, REJECT,
 // COMPLETE) to an appointment, returning 404 when it belongs to another store.
-func (s *Service) UpdateAppointmentStatus(ctx context.Context, storeID, apptID, action string) (store.Appointment, error) {
+func (s *Service) UpdateAppointmentStatus(ctx context.Context, actorID, storeID, apptID, action string) (store.Appointment, error) {
 	if strings.TrimSpace(action) == "" {
 		return store.Appointment{}, &FieldError{Field: "action", Message: "action is required (CONFIRM, REJECT, or COMPLETE)"}
+	}
+	if _, err := s.requireStoreOwnership(ctx, actorID, storeID); err != nil {
+		return store.Appointment{}, err
 	}
 	appt, err := s.db.GetAppointmentByID(ctx, apptID)
 	if err != nil {
@@ -153,7 +156,7 @@ func (s *Service) UpdateAppointmentStatus(ctx context.Context, storeID, apptID, 
 // RescheduleAppointment moves an appointment to a new {date, time} in the
 // store's timezone, revalidating availability while excluding the appointment
 // itself from the capacity count.
-func (s *Service) RescheduleAppointment(ctx context.Context, storeID, apptID, date, at string) (store.Appointment, error) {
+func (s *Service) RescheduleAppointment(ctx context.Context, actorID, storeID, apptID, date, at string) (store.Appointment, error) {
 	if err := ValidateTimeFormat(at, "time"); err != nil {
 		return store.Appointment{}, &FieldError{Field: "time", Message: err.Error()}
 	}
@@ -161,9 +164,9 @@ func (s *Service) RescheduleAppointment(ctx context.Context, storeID, apptID, da
 		return store.Appointment{}, &FieldError{Field: "date", Message: "date must be in YYYY-MM-DD format"}
 	}
 
-	st, err := s.db.GetStoreByID(ctx, storeID)
+	st, err := s.requireStoreOwnership(ctx, actorID, storeID)
 	if err != nil {
-		return store.Appointment{}, notFoundIfNoRows(err)
+		return store.Appointment{}, err
 	}
 	appt, err := s.db.GetAppointmentByID(ctx, apptID)
 	if err != nil {

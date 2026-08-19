@@ -27,21 +27,78 @@ func TestMain(m *testing.M) {
 // fakeService implements handlers.Service with per-field overrides so each
 // test only stubs what it exercises.
 type fakeService struct {
+	register            func(ctx context.Context, name, email, password string) (store.User, error)
+	login               func(ctx context.Context, email, password string) (store.User, service.SessionResult, error)
+	logout              func(ctx context.Context, rawToken string) error
+	me                  func(ctx context.Context, actorID string) (store.User, error)
+	authenticateSession func(ctx context.Context, rawToken string) (store.Actor, error)
+	sessionCSRF         func(ctx context.Context, rawToken string) (string, error)
+	bootstrapOwner      func(ctx context.Context) (store.Actor, error)
+
 	listPublicStores        func(ctx context.Context, q, specialty string, page, limit int) ([]store.Store, int, error)
 	getPublicStore          func(ctx context.Context, slug string) (store.Store, []store.BusinessHour, error)
 	getSlots                func(ctx context.Context, slug, date string) ([]service.TimeSlot, error)
 	book                    func(ctx context.Context, slug string, in service.BookInput) (*store.Appointment, error)
-	listStoresByOwner       func(ctx context.Context, ownerID string) ([]store.StoreDetail, error)
-	createStore             func(ctx context.Context, ownerID string, in store.CreateStoreInput) (store.Store, error)
-	getStore                func(ctx context.Context, id string) (store.StoreDetail, error)
-	updateStore             func(ctx context.Context, id string, in store.UpdateStoreInput) (store.Store, error)
-	replaceBusinessHours    func(ctx context.Context, storeID string, in []store.BusinessHourInput) ([]store.BusinessHour, error)
-	createBlockedDate       func(ctx context.Context, storeID, date, reason string) (store.BlockedDate, error)
-	deleteBlockedDate       func(ctx context.Context, storeID, id string) error
-	listAppointments        func(ctx context.Context, storeID, date string, status *store.AppointmentStatus) ([]store.Appointment, error)
-	createAppointment       func(ctx context.Context, storeID string, in service.CreateAppointmentInput) (store.Appointment, error)
-	updateAppointmentStatus func(ctx context.Context, storeID, apptID, action string) (store.Appointment, error)
-	rescheduleAppointment   func(ctx context.Context, storeID, apptID, date, time string) (store.Appointment, error)
+	listStoresByOwner       func(ctx context.Context, actorID string) ([]store.StoreDetail, error)
+	createStore             func(ctx context.Context, actorID string, in store.CreateStoreInput) (store.Store, error)
+	getStore                func(ctx context.Context, actorID, id string) (store.StoreDetail, error)
+	updateStore             func(ctx context.Context, actorID, id string, in store.UpdateStoreInput) (store.Store, error)
+	replaceBusinessHours    func(ctx context.Context, actorID, storeID string, in []store.BusinessHourInput) ([]store.BusinessHour, error)
+	createBlockedDate       func(ctx context.Context, actorID, storeID, date, reason string) (store.BlockedDate, error)
+	deleteBlockedDate       func(ctx context.Context, actorID, storeID, id string) error
+	listAppointments        func(ctx context.Context, actorID, storeID, date string, status *store.AppointmentStatus) ([]store.Appointment, error)
+	createAppointment       func(ctx context.Context, actorID, storeID string, in service.CreateAppointmentInput) (store.Appointment, error)
+	updateAppointmentStatus func(ctx context.Context, actorID, storeID, apptID, action string) (store.Appointment, error)
+	rescheduleAppointment   func(ctx context.Context, actorID, storeID, apptID, date, time string) (store.Appointment, error)
+}
+
+func (f *fakeService) Register(ctx context.Context, name, email, password string) (store.User, error) {
+	if f.register != nil {
+		return f.register(ctx, name, email, password)
+	}
+	return store.User{}, nil
+}
+
+func (f *fakeService) Login(ctx context.Context, email, password string) (store.User, service.SessionResult, error) {
+	if f.login != nil {
+		return f.login(ctx, email, password)
+	}
+	return store.User{}, service.SessionResult{}, nil
+}
+
+func (f *fakeService) Logout(ctx context.Context, rawToken string) error {
+	if f.logout != nil {
+		return f.logout(ctx, rawToken)
+	}
+	return nil
+}
+
+func (f *fakeService) Me(ctx context.Context, actorID string) (store.User, error) {
+	if f.me != nil {
+		return f.me(ctx, actorID)
+	}
+	return store.User{}, nil
+}
+
+func (f *fakeService) AuthenticateSession(ctx context.Context, rawToken string) (store.Actor, error) {
+	if f.authenticateSession != nil {
+		return f.authenticateSession(ctx, rawToken)
+	}
+	return store.Actor{}, service.ErrUnauthorized
+}
+
+func (f *fakeService) SessionCSRFToken(ctx context.Context, rawToken string) (string, error) {
+	if f.sessionCSRF != nil {
+		return f.sessionCSRF(ctx, rawToken)
+	}
+	return "", service.ErrUnauthorized
+}
+
+func (f *fakeService) BootstrapOwner(ctx context.Context) (store.Actor, error) {
+	if f.bootstrapOwner != nil {
+		return f.bootstrapOwner(ctx)
+	}
+	return store.Actor{ID: "owner-1", Name: "Dashboard Owner", Email: "owner@example.com", Role: store.RoleOwner}, nil
 }
 
 func (f *fakeService) ListPublicStores(ctx context.Context, q, specialty string, page, limit int) ([]store.Store, int, error) {
@@ -72,90 +129,95 @@ func (f *fakeService) Book(ctx context.Context, slug string, in service.BookInpu
 	return nil, nil
 }
 
-func (f *fakeService) ListStoresByOwner(ctx context.Context, ownerID string) ([]store.StoreDetail, error) {
+func (f *fakeService) ListStoresByOwner(ctx context.Context, actorID string) ([]store.StoreDetail, error) {
 	if f.listStoresByOwner != nil {
-		return f.listStoresByOwner(ctx, ownerID)
+		return f.listStoresByOwner(ctx, actorID)
 	}
 	return nil, nil
 }
 
-func (f *fakeService) CreateStore(ctx context.Context, ownerID string, in store.CreateStoreInput) (store.Store, error) {
+func (f *fakeService) CreateStore(ctx context.Context, actorID string, in store.CreateStoreInput) (store.Store, error) {
 	if f.createStore != nil {
-		return f.createStore(ctx, ownerID, in)
+		return f.createStore(ctx, actorID, in)
 	}
 	return store.Store{}, nil
 }
 
-func (f *fakeService) GetStore(ctx context.Context, id string) (store.StoreDetail, error) {
+func (f *fakeService) GetStore(ctx context.Context, actorID, id string) (store.StoreDetail, error) {
 	if f.getStore != nil {
-		return f.getStore(ctx, id)
+		return f.getStore(ctx, actorID, id)
 	}
 	return store.StoreDetail{}, nil
 }
 
-func (f *fakeService) UpdateStore(ctx context.Context, id string, in store.UpdateStoreInput) (store.Store, error) {
+func (f *fakeService) UpdateStore(ctx context.Context, actorID, id string, in store.UpdateStoreInput) (store.Store, error) {
 	if f.updateStore != nil {
-		return f.updateStore(ctx, id, in)
+		return f.updateStore(ctx, actorID, id, in)
 	}
 	return store.Store{}, nil
 }
 
-func (f *fakeService) ReplaceBusinessHours(ctx context.Context, storeID string, in []store.BusinessHourInput) ([]store.BusinessHour, error) {
+func (f *fakeService) ReplaceBusinessHours(ctx context.Context, actorID, storeID string, in []store.BusinessHourInput) ([]store.BusinessHour, error) {
 	if f.replaceBusinessHours != nil {
-		return f.replaceBusinessHours(ctx, storeID, in)
+		return f.replaceBusinessHours(ctx, actorID, storeID, in)
 	}
 	return nil, nil
 }
 
-func (f *fakeService) CreateBlockedDate(ctx context.Context, storeID, date, reason string) (store.BlockedDate, error) {
+func (f *fakeService) CreateBlockedDate(ctx context.Context, actorID, storeID, date, reason string) (store.BlockedDate, error) {
 	if f.createBlockedDate != nil {
-		return f.createBlockedDate(ctx, storeID, date, reason)
+		return f.createBlockedDate(ctx, actorID, storeID, date, reason)
 	}
 	return store.BlockedDate{}, nil
 }
 
-func (f *fakeService) DeleteBlockedDate(ctx context.Context, storeID, id string) error {
+func (f *fakeService) DeleteBlockedDate(ctx context.Context, actorID, storeID, id string) error {
 	if f.deleteBlockedDate != nil {
-		return f.deleteBlockedDate(ctx, storeID, id)
+		return f.deleteBlockedDate(ctx, actorID, storeID, id)
 	}
 	return nil
 }
 
-func (f *fakeService) ListAppointments(ctx context.Context, storeID, date string, status *store.AppointmentStatus) ([]store.Appointment, error) {
+func (f *fakeService) ListAppointments(ctx context.Context, actorID, storeID, date string, status *store.AppointmentStatus) ([]store.Appointment, error) {
 	if f.listAppointments != nil {
-		return f.listAppointments(ctx, storeID, date, status)
+		return f.listAppointments(ctx, actorID, storeID, date, status)
 	}
 	return nil, nil
 }
 
-func (f *fakeService) CreateAppointment(ctx context.Context, storeID string, in service.CreateAppointmentInput) (store.Appointment, error) {
+func (f *fakeService) CreateAppointment(ctx context.Context, actorID, storeID string, in service.CreateAppointmentInput) (store.Appointment, error) {
 	if f.createAppointment != nil {
-		return f.createAppointment(ctx, storeID, in)
+		return f.createAppointment(ctx, actorID, storeID, in)
 	}
 	return store.Appointment{}, nil
 }
 
-func (f *fakeService) UpdateAppointmentStatus(ctx context.Context, storeID, apptID, action string) (store.Appointment, error) {
+func (f *fakeService) UpdateAppointmentStatus(ctx context.Context, actorID, storeID, apptID, action string) (store.Appointment, error) {
 	if f.updateAppointmentStatus != nil {
-		return f.updateAppointmentStatus(ctx, storeID, apptID, action)
+		return f.updateAppointmentStatus(ctx, actorID, storeID, apptID, action)
 	}
 	return store.Appointment{}, nil
 }
 
-func (f *fakeService) RescheduleAppointment(ctx context.Context, storeID, apptID, date, time string) (store.Appointment, error) {
+func (f *fakeService) RescheduleAppointment(ctx context.Context, actorID, storeID, apptID, date, time string) (store.Appointment, error) {
 	if f.rescheduleAppointment != nil {
-		return f.rescheduleAppointment(ctx, storeID, apptID, date, time)
+		return f.rescheduleAppointment(ctx, actorID, storeID, apptID, date, time)
 	}
 	return store.Appointment{}, nil
 }
 
-// newTestRouter builds the real router wired to the fake service.
+// newTestRouter builds the real router wired to the fake service. The API key
+// maps to the bootstrap owner ("owner-1") during the transition, mirroring
+// production with AUTH_DISABLE_API_KEY=false.
 func newTestRouter(t *testing.T, svc handlers.Service) http.Handler {
 	t.Helper()
 	cfg := &config.Config{
-		APIKey:      "secret-key",
-		OwnerID:     "owner-1",
-		CORSOrigins: []string{"http://localhost:5173"},
+		APIKey:              "secret-key",
+		OwnerID:             "owner-1",
+		CORSOrigins:         []string{"http://localhost:5173"},
+		CookieSecure:        false,
+		SessionTTL:          24 * time.Hour,
+		OwnerBootstrapEmail: "owner@example.com",
 	}
 	return apihttp.NewRouter(cfg, svc)
 }
@@ -317,7 +379,7 @@ func TestUpdateHours_NotAnArray(t *testing.T) {
 
 func TestCreateBlockedDate_PastDate(t *testing.T) {
 	f := &fakeService{}
-	f.createBlockedDate = func(_ context.Context, storeID, date, reason string) (store.BlockedDate, error) {
+	f.createBlockedDate = func(_ context.Context, _ string, storeID, date, reason string) (store.BlockedDate, error) {
 		if err := service.ValidateFutureDate(date); err != nil {
 			return store.BlockedDate{}, &service.FieldError{Field: "date", Message: err.Error()}
 		}
@@ -333,7 +395,7 @@ func TestCreateBlockedDate_PastDate(t *testing.T) {
 
 func TestUpdateAppointmentStatus_InvalidAction(t *testing.T) {
 	f := &fakeService{}
-	f.updateAppointmentStatus = func(_ context.Context, storeID, apptID, action string) (store.Appointment, error) {
+	f.updateAppointmentStatus = func(_ context.Context, _ string, storeID, apptID, action string) (store.Appointment, error) {
 		if storeID != "s1" || apptID != "a1" {
 			t.Errorf("args = (%q, %q), want (s1, a1)", storeID, apptID)
 		}
@@ -349,7 +411,7 @@ func TestUpdateAppointmentStatus_InvalidAction(t *testing.T) {
 
 func TestReschedule_CrossStoreNotFound(t *testing.T) {
 	f := &fakeService{}
-	f.rescheduleAppointment = func(_ context.Context, storeID, apptID, date, time string) (store.Appointment, error) {
+	f.rescheduleAppointment = func(_ context.Context, _ string, storeID, apptID, date, time string) (store.Appointment, error) {
 		if storeID != "s1" || apptID != "a1" {
 			t.Errorf("args = (%q, %q), want (s1, a1)", storeID, apptID)
 		}
@@ -365,7 +427,7 @@ func TestReschedule_CrossStoreNotFound(t *testing.T) {
 
 func TestReschedule_UnavailableSlot(t *testing.T) {
 	f := &fakeService{}
-	f.rescheduleAppointment = func(_ context.Context, storeID, apptID, date, time string) (store.Appointment, error) {
+	f.rescheduleAppointment = func(_ context.Context, _ string, storeID, apptID, date, time string) (store.Appointment, error) {
 		return store.Appointment{}, &service.FieldError{Field: "time", Message: "slot is no longer available"}
 	}
 	h := newTestRouter(t, f)
