@@ -1,10 +1,35 @@
-# user-auth Specification
+# Delta para user-auth
 
-## Purpose
+El contrato de errores JSON sigue la spec `go-api` (`{"error":{code,message,field}}`); los códigos por endpoint se listan en cada requisito. Keywords RFC 2119.
 
-Autenticación con email y password y protección de rutas por rol para la Appointments app. La identidad se resuelve con sesiones server-side en el backend Go (cookie httpOnly, hash SHA-256 del token en `sessions`); el rol se persiste en `users.role` y se resuelve server-side. El frontend SPA consume `GET /api/auth/me` y protege `/dashboard` con un guard de ruta.
+## REMOVED Requirements
 
-## Requirements
+### Requirement: Auth.js Configuration
+
+(Reason: Auth.js v5, Next.js y `src/auth.ts` fueron eliminados en la migración React+Go.)
+(Migration: reemplazado por login con sesiones server-side en el backend Go — ver ADDED Requirements.)
+
+### Requirement: Role Injection
+
+(Reason: el rol ya no viaja en JWT; se persiste en `users.role` y se resuelve server-side desde la sesión.)
+(Migration: `GET /api/auth/me` expone el rol del actor.)
+
+### Requirement: Route Protection
+
+(Reason: `src/proxy.ts` no existe; la protección pasa al middleware Go y al guard SPA.)
+(Migration: ver ADDED "Middleware de sesión", "Middleware de rol" y la delta de `owner-portal`.)
+
+### Requirement: API Route Handler
+
+(Reason: eliminado con Next.js `app/api/auth/[...nextauth]`.)
+(Migration: los endpoints `/api/auth/*` viven en el backend Go.)
+
+### Requirement: Session Provider
+
+(Reason: eliminado; la SPA consulta `GET /api/auth/me` con `credentials: "include"`.)
+(Migration: el estado de sesión lo gestiona el cliente API y el guard de ruta.)
+
+## ADDED Requirements
 
 ### Requirement: Registro con email y password
 

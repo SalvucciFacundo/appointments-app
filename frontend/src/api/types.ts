@@ -4,6 +4,27 @@ export type AppointmentStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLET
 
 export type AppointmentAction = "CONFIRM" | "REJECT" | "COMPLETE"
 
+export type Role = "USER" | "OWNER" | "ADMIN"
+
+/** Authenticated user profile returned by the auth endpoints. */
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: Role
+}
+
+export interface LoginInput {
+  email: string
+  password: string
+}
+
+export interface RegisterInput {
+  name: string
+  email: string
+  password: string
+}
+
 export interface BusinessHour {
   id: string
   storeId: string

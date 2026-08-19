@@ -50,32 +50,32 @@ export function book(slug: string, payload: BookInput): Promise<Appointment> {
   return post<Appointment>(`/api/stores/${encodeURIComponent(slug)}/book`, payload)
 }
 
-// ---- Owner API (X-API-Key) ----
+// ---- Owner API (session) ----
 
-export function listOwnerStores(apiKey: string): Promise<Store[]> {
-  return get<Store[]>(STORES, apiKey)
+export function listOwnerStores(): Promise<Store[]> {
+  return get<Store[]>(STORES)
 }
 
-export function createStore(payload: CreateStoreInput, apiKey: string): Promise<Store> {
-  return post<Store>(STORES, payload, apiKey)
+export function createStore(payload: CreateStoreInput): Promise<Store> {
+  return post<Store>(STORES, payload)
 }
 
-export function getStore(id: string, apiKey: string): Promise<StoreDetail> {
-  return get<StoreDetail>(`${STORES}/${encodeURIComponent(id)}`, apiKey)
+export function getStore(id: string): Promise<StoreDetail> {
+  return get<StoreDetail>(`${STORES}/${encodeURIComponent(id)}`)
 }
 
-export function updateStore(id: string, payload: UpdateStoreInput, apiKey: string): Promise<Store> {
-  return put<Store>(`${STORES}/${encodeURIComponent(id)}`, payload, apiKey)
+export function updateStore(id: string, payload: UpdateStoreInput): Promise<Store> {
+  return put<Store>(`${STORES}/${encodeURIComponent(id)}`, payload)
 }
 
-export function replaceHours(id: string, hours: BusinessHourInput[], apiKey: string): Promise<BusinessHour[]> {
-  return put<BusinessHour[]>(`${STORES}/${encodeURIComponent(id)}/hours`, hours, apiKey)
+export function replaceHours(id: string, hours: BusinessHourInput[]): Promise<BusinessHour[]> {
+  return put<BusinessHour[]>(`${STORES}/${encodeURIComponent(id)}/hours`, hours)
 }
 
-export function addBlockedDate(id: string, payload: BlockedDateInput, apiKey: string): Promise<BlockedDate> {
-  return post<BlockedDate>(`${STORES}/${encodeURIComponent(id)}/blocked-dates`, payload, apiKey)
+export function addBlockedDate(id: string, payload: BlockedDateInput): Promise<BlockedDate> {
+  return post<BlockedDate>(`${STORES}/${encodeURIComponent(id)}/blocked-dates`, payload)
 }
 
-export function deleteBlockedDate(storeId: string, blockedDateId: string, apiKey: string): Promise<void> {
-  return del(`${STORES}/${encodeURIComponent(storeId)}/blocked-dates/${encodeURIComponent(blockedDateId)}`, apiKey)
+export function deleteBlockedDate(storeId: string, blockedDateId: string): Promise<void> {
+  return del(`${STORES}/${encodeURIComponent(storeId)}/blocked-dates/${encodeURIComponent(blockedDateId)}`)
 }

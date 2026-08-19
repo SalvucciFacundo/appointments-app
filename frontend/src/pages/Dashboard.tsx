@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   listOwnerStores,
   getStore,
@@ -7,6 +8,7 @@ import {
   addBlockedDate,
   deleteBlockedDate,
 } from "@/api/stores"
+import { useAuth } from "@/auth/AuthContext"
 import type { Store, StoreDetail, BusinessHourInput, Appointment } from "@/api/types"
 import Card from "@/components/ui/Card"
 import Button from "@/components/ui/Button"
@@ -18,8 +20,6 @@ import DayCalendar from "@/components/appointments/DayCalendar"
 import AppointmentDetail from "@/components/appointments/AppointmentDetail"
 
 const DAY_LABELS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
-
-const API_KEY_STORAGE = "dashboard.apiKey"
 
 function Skeleton() {
   return (
@@ -33,9 +33,8 @@ function Skeleton() {
 
 export default function Dashboard() {
   const { addToast } = useToast()
-
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) ?? "")
-  const [apiKeyInput, setApiKeyInput] = useState(apiKey)
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
 
   const [stores, setStores] = useState<Store[]>([])
   const [store, setStore] = useState<StoreDetail | null>(null)
@@ -73,11 +72,11 @@ export default function Dashboard() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [appointmentRefreshKey, setAppointmentRefreshKey] = useState(0)
 
-  const loadStores = useCallback(async (key: string) => {
+  const loadStores = useCallback(async () => {
     setStoresLoading(true)
     setError(null)
     try {
-      const data = await listOwnerStores(key)
+      const data = await listOwnerStores()
       setStores(data)
       if (data.length > 0) {
         setSelectedStoreId((prev) => (data.some((s) => s.id === prev) ? prev : data[0].id))
@@ -96,15 +95,15 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    if (apiKey) loadStores(apiKey)
-  }, [apiKey, loadStores])
+    loadStores()
+  }, [loadStores])
 
   const loadStore = useCallback(
     async (storeId: string) => {
       setLoading(true)
       setError(null)
       try {
-        const data = await getStore(storeId, apiKey)
+        const data = await getStore(storeId)
         setStore(data)
         setEditName(data.name)
         setEditDescription(data.description ?? "")
@@ -132,19 +131,12 @@ export default function Dashboard() {
         setLoading(false)
       }
     },
-    [apiKey],
+    [],
   )
 
   useEffect(() => {
     if (selectedStoreId) loadStore(selectedStoreId)
   }, [selectedStoreId, loadStore])
-
-  const handleSaveApiKey = (e: FormEvent) => {
-    e.preventDefault()
-    const key = apiKeyInput.trim()
-    localStorage.setItem(API_KEY_STORAGE, key)
-    setApiKey(key)
-  }
 
   // ---- Save Handlers ----
 
@@ -165,7 +157,6 @@ export default function Dashboard() {
           latitude: editLatitude ? parseFloat(editLatitude) : undefined,
           longitude: editLongitude ? parseFloat(editLongitude) : undefined,
         },
-        apiKey,
       )
       setStore((prev) => (prev ? { ...prev, ...updated } : prev))
       setStores((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
@@ -182,7 +173,7 @@ export default function Dashboard() {
 
     setSaving("hours")
     try {
-      const updated = await replaceHours(store.id, hours, apiKey)
+      const updated = await replaceHours(store.id, hours)
       setStore((prev) => (prev ? { ...prev, businessHours: updated } : prev))
       addToast("Horarios actualizados", "success")
     } catch (err) {
@@ -205,7 +196,6 @@ export default function Dashboard() {
           maxSlotsPerDay,
           cancelationLimit,
         },
-        apiKey,
       )
       setStore((prev) => (prev ? { ...prev, ...updated } : prev))
       addToast("Configuración de turnos actualizada", "success")
@@ -221,7 +211,7 @@ export default function Dashboard() {
 
     setSaving("blocked")
     try {
-      const bd = await addBlockedDate(store.id, { date: newBlockedDate, reason: newBlockedReason.trim() || undefined }, apiKey)
+      const bd = await addBlockedDate(store.id, { date: newBlockedDate, reason: newBlockedReason.trim() || undefined })
       setStore((prev) =>
         prev
           ? {
@@ -245,7 +235,7 @@ export default function Dashboard() {
 
     setSaving("blocked")
     try {
-      await deleteBlockedDate(store.id, blockedDateId, apiKey)
+      await deleteBlockedDate(store.id, blockedDateId)
       setStore((prev) =>
         prev
           ? {
@@ -260,30 +250,6 @@ export default function Dashboard() {
     } finally {
       setSaving(null)
     }
-  }
-
-  if (!apiKey) {
-    return (
-      <div className="mx-auto max-w-md px-4 py-16">
-        <Card title="Dashboard del comercio">
-          <p className="mb-4 text-sm text-[var(--text-secondary)]">
-            Ingresá tu API key para acceder al panel de gestión.
-          </p>
-          <form onSubmit={handleSaveApiKey} className="space-y-4">
-            <Input
-              label="API Key"
-              value={apiKeyInput}
-              onChange={(e) => setApiKeyInput(e.currentTarget.value)}
-              placeholder="tu-api-key"
-              hint="Se guarda localmente en tu navegador."
-            />
-            <Button type="submit" disabled={!apiKeyInput.trim()} className="w-full">
-              Ingresar
-            </Button>
-          </form>
-        </Card>
-      </div>
-    )
   }
 
   if (storesLoading) {
@@ -301,11 +267,8 @@ export default function Dashboard() {
       <div className="mx-auto max-w-md px-4 py-16">
         <Card>
           <p className="text-sm text-[var(--danger)]">{error}</p>
-          <Button variant="secondary" onClick={() => loadStores(apiKey)} className="mt-4">
+          <Button variant="secondary" onClick={() => loadStores()} className="mt-4">
             Reintentar
-          </Button>
-          <Button variant="ghost" onClick={() => { localStorage.removeItem(API_KEY_STORAGE); setApiKey(""); setApiKeyInput("") }} className="mt-4 ml-2">
-            Cambiar API key
           </Button>
         </Card>
       </div>
@@ -317,7 +280,7 @@ export default function Dashboard() {
       <div className="mx-auto max-w-3xl px-4 py-8">
         <Card>
           <p className="text-sm text-[var(--text-tertiary)]">
-            No se encontraron comercios para esta API key.
+            No se encontraron comercios para esta cuenta.
           </p>
         </Card>
       </div>
@@ -343,14 +306,24 @@ export default function Dashboard() {
             ))}
           </select>
         )}
-        <button
-          onClick={() => { localStorage.removeItem(API_KEY_STORAGE); setApiKey(""); setApiKeyInput("") }}
-          className="ml-auto inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-1.5 text-xs font-medium
-            text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]
-            transition-all duration-150"
-        >
-          Cambiar API key
-        </button>
+        <div className="ml-auto flex items-center gap-3">
+          {user && (
+            <span className="text-xs text-[var(--text-tertiary)]">
+              {user.name} · {user.email}
+            </span>
+          )}
+          <button
+            onClick={async () => {
+              await logout()
+              navigate("/login")
+            }}
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-1.5 text-xs font-medium
+              text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]
+              transition-all duration-150"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -555,16 +528,15 @@ export default function Dashboard() {
           </Card>
 
           {/* Appointment Sections */}
-          <PendingQueue key={`pending-${appointmentRefreshKey}`} storeId={store.id} apiKey={apiKey} />
-          <TodayAgenda key={`agenda-${appointmentRefreshKey}`} storeId={store.id} apiKey={apiKey}
+          <PendingQueue key={`pending-${appointmentRefreshKey}`} storeId={store.id} />
+          <TodayAgenda key={`agenda-${appointmentRefreshKey}`} storeId={store.id}
             onSelectAppointment={setSelectedAppointment} />
-          <DayCalendar key={`calendar-${appointmentRefreshKey}`} storeId={store.id} store={store} apiKey={apiKey} />
+          <DayCalendar key={`calendar-${appointmentRefreshKey}`} storeId={store.id} store={store} />
 
           {/* Appointment Detail Modal */}
           <AppointmentDetail
             appointment={selectedAppointment}
             storeId={store.id}
-            apiKey={apiKey}
             onClose={() => setSelectedAppointment(null)}
             onStatusChanged={() => {
               setSelectedAppointment(null)

@@ -13,36 +13,26 @@ export interface AppointmentFilters {
   status?: AppointmentStatus
 }
 
-export function listAppointments(
-  storeId: string,
-  filters: AppointmentFilters = {},
-  apiKey?: string,
-): Promise<Appointment[]> {
+export function listAppointments(storeId: string, filters: AppointmentFilters = {}): Promise<Appointment[]> {
   const search = new URLSearchParams()
   if (filters.date) search.set("date", filters.date)
   if (filters.status) search.set("status", filters.status)
   const qs = search.toString()
-  return get<Appointment[]>(`${BASE}/${encodeURIComponent(storeId)}/appointments${qs ? `?${qs}` : ""}`, apiKey)
+  return get<Appointment[]>(`${BASE}/${encodeURIComponent(storeId)}/appointments${qs ? `?${qs}` : ""}`)
 }
 
-export function createAppointment(
-  storeId: string,
-  payload: CreateAppointmentInput,
-  apiKey: string,
-): Promise<Appointment> {
-  return post<Appointment>(`${BASE}/${encodeURIComponent(storeId)}/appointments`, payload, apiKey)
+export function createAppointment(storeId: string, payload: CreateAppointmentInput): Promise<Appointment> {
+  return post<Appointment>(`${BASE}/${encodeURIComponent(storeId)}/appointments`, payload)
 }
 
 export function updateStatus(
   storeId: string,
   appointmentId: string,
   action: AppointmentAction,
-  apiKey: string,
 ): Promise<Appointment> {
   return put<Appointment>(
     `${BASE}/${encodeURIComponent(storeId)}/appointments/${encodeURIComponent(appointmentId)}`,
     { action },
-    apiKey,
   )
 }
 
@@ -50,11 +40,9 @@ export function reschedule(
   storeId: string,
   appointmentId: string,
   slot: { date: string; time: string },
-  apiKey: string,
 ): Promise<Appointment> {
   return put<Appointment>(
     `${BASE}/${encodeURIComponent(storeId)}/appointments/${encodeURIComponent(appointmentId)}/reschedule`,
     slot,
-    apiKey,
   )
 }
