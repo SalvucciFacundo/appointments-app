@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom"
 import {
   listOwnerStores,
   getStore,
+  createStore,
   updateStore,
   replaceHours,
   addBlockedDate,
   deleteBlockedDate,
 } from "@/api/stores"
+import { ApiError } from "@/api/client"
 import { useAuth } from "@/auth/AuthContext"
 import type { Store, StoreDetail, BusinessHourInput, Appointment } from "@/api/types"
 import Card from "@/components/ui/Card"
@@ -72,6 +74,15 @@ export default function Dashboard() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [appointmentRefreshKey, setAppointmentRefreshKey] = useState(0)
 
+  // Onboarding — account with no stores yet (fresh registration or new owner)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [onbName, setOnbName] = useState("")
+  const [onbAddress, setOnbAddress] = useState("")
+  const [onbPhone, setOnbPhone] = useState("")
+  const [onbSpecialty, setOnbSpecialty] = useState("")
+  const [onbError, setOnbError] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+
   const loadStores = useCallback(async () => {
     setStoresLoading(true)
     setError(null)
@@ -79,16 +90,28 @@ export default function Dashboard() {
       const data = await listOwnerStores()
       setStores(data)
       if (data.length > 0) {
+        setShowOnboarding(false)
         setSelectedStoreId((prev) => (data.some((s) => s.id === prev) ? prev : data[0].id))
       } else {
         setSelectedStoreId("")
         setStore(null)
+        setShowOnboarding(true)
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error al cargar los comercios"
-      setError(msg)
-      setStores([])
-      setStore(null)
+      if (err instanceof ApiError && err.status === 403) {
+        // Authenticated but not yet OWNER (fresh registration): a USER has no
+        // owner store access, so guide them through creating their first store
+        // instead of showing a dead "no stores" card.
+        setStores([])
+        setStore(null)
+        setError(null)
+        setShowOnboarding(true)
+      } else {
+        const msg = err instanceof Error ? err.message : "Error al cargar los comercios"
+        setError(msg)
+        setStores([])
+        setStore(null)
+      }
     } finally {
       setStoresLoading(false)
     }
@@ -137,6 +160,33 @@ export default function Dashboard() {
   useEffect(() => {
     if (selectedStoreId) loadStore(selectedStoreId)
   }, [selectedStoreId, loadStore])
+
+  // ---- Onboarding: create first store ----
+
+  async function handleCreateStore(e: FormEvent) {
+    e.preventDefault()
+    setCreating(true)
+    setOnbError(null)
+    try {
+      await createStore({
+        name: onbName.trim(),
+        address: onbAddress.trim(),
+        phone: onbPhone.trim() || undefined,
+        specialty: onbSpecialty.trim(),
+      })
+      addToast("Comercio creado. ¡Bienvenido a tu panel de gestión!", "success")
+      setShowOnboarding(false)
+      setOnbName("")
+      setOnbAddress("")
+      setOnbPhone("")
+      setOnbSpecialty("")
+      await loadStores()
+    } catch (err) {
+      setOnbError(err instanceof Error ? err.message : "No se pudo crear el comercio")
+    } finally {
+      setCreating(false)
+    }
+  }
 
   // ---- Save Handlers ----
 
@@ -275,13 +325,52 @@ export default function Dashboard() {
     )
   }
 
-  if (stores.length === 0) {
+  if (showOnboarding && stores.length === 0 && !error) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <Card>
-          <p className="text-sm text-[var(--text-tertiary)]">
-            No se encontraron comercios para esta cuenta.
+        <Card title="🏪 Creá tu primer comercio">
+          <p className="mb-4 text-sm text-[var(--text-secondary)]">
+            {user?.role === "USER"
+              ? "Tu cuenta todavía no tiene un comercio. Creá el primero y pasás a ser dueño/a del panel de gestión de turnos."
+              : "Aún no tenés comercios. Creá el primero para empezar a gestionar turnos."}
           </p>
+          <form onSubmit={handleCreateStore} className="space-y-4">
+            <Input
+              label="Nombre del comercio"
+              required
+              placeholder="Ej.: Mi Barbería"
+              value={onbName}
+              onChange={(e) => setOnbName(e.currentTarget.value)}
+            />
+            <Input
+              label="Dirección"
+              required
+              placeholder="Ej.: Av. Corrientes 1234, CABA"
+              value={onbAddress}
+              onChange={(e) => setOnbAddress(e.currentTarget.value)}
+            />
+            <Input
+              label="Teléfono (opcional)"
+              placeholder="Ej.: +54 11 5555-1234"
+              value={onbPhone}
+              onChange={(e) => setOnbPhone(e.currentTarget.value)}
+            />
+            <Input
+              label="Especialidad"
+              required
+              placeholder="Ej.: Barbería, Manicura, Masajes"
+              value={onbSpecialty}
+              onChange={(e) => setOnbSpecialty(e.currentTarget.value)}
+            />
+            {onbError && <p className="text-sm text-[var(--danger)]">{onbError}</p>}
+            <Button
+              type="submit"
+              loading={creating}
+              disabled={!onbName.trim() || !onbAddress.trim() || !onbSpecialty.trim()}
+            >
+              Crear comercio
+            </Button>
+          </form>
         </Card>
       </div>
     )

@@ -108,6 +108,11 @@ func (s *Service) CreateStore(ctx context.Context, actorID string, in store.Crea
 	if err := s.db.EnsureOwnerUser(ctx, actorID); err != nil {
 		return store.Store{}, err
 	}
+	// A newly registered user is USER; creating their first store promotes
+	// them to OWNER (idempotent — safe for owners adding more stores).
+	if err := s.db.PromoteToOwner(ctx, actorID); err != nil {
+		return store.Store{}, err
+	}
 	slug, err := GenerateUniqueSlug(ctx, s.db, in.Name)
 	if err != nil {
 		return store.Store{}, err

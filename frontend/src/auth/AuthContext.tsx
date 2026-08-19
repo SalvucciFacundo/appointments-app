@@ -30,7 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return next
   }, [])
 
-  const register = useCallback((input: RegisterInput) => authApi.register(input), [])
+  const register = useCallback(async (input: RegisterInput) => {
+    // Registration auto-logs the user in (the backend issues a session), so
+    // persist the returned profile just like login does.
+    const next = await authApi.register(input)
+    setUser(next)
+    return next
+  }, [])
 
   const logout = useCallback(async () => {
     await authApi.logout()

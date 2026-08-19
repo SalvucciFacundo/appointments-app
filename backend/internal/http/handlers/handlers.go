@@ -19,6 +19,7 @@ import (
 type Service interface {
 	// Auth flow.
 	Register(ctx context.Context, name, email, password string) (store.User, error)
+	IssueSession(ctx context.Context, userID string) (service.SessionResult, error)
 	Login(ctx context.Context, email, password string) (store.User, service.SessionResult, error)
 	Logout(ctx context.Context, rawToken string) error
 	Me(ctx context.Context, actorID string) (store.User, error)

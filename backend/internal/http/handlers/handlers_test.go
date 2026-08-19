@@ -28,6 +28,7 @@ func TestMain(m *testing.M) {
 // test only stubs what it exercises.
 type fakeService struct {
 	register            func(ctx context.Context, name, email, password string) (store.User, error)
+	issueSession        func(ctx context.Context, userID string) (service.SessionResult, error)
 	login               func(ctx context.Context, email, password string) (store.User, service.SessionResult, error)
 	logout              func(ctx context.Context, rawToken string) error
 	me                  func(ctx context.Context, actorID string) (store.User, error)
@@ -57,6 +58,13 @@ func (f *fakeService) Register(ctx context.Context, name, email, password string
 		return f.register(ctx, name, email, password)
 	}
 	return store.User{}, nil
+}
+
+func (f *fakeService) IssueSession(ctx context.Context, userID string) (service.SessionResult, error) {
+	if f.issueSession != nil {
+		return f.issueSession(ctx, userID)
+	}
+	return service.SessionResult{}, nil
 }
 
 func (f *fakeService) Login(ctx context.Context, email, password string) (store.User, service.SessionResult, error) {
@@ -487,6 +495,42 @@ func TestCreateStore_Success(t *testing.T) {
 	}
 	if got.Slug != "clinica" {
 		t.Errorf("slug = %q, want clinica", got.Slug)
+	}
+}
+
+// A newly registered USER (session-authenticated, not yet promoted) may create
+// their first store — the route is beneath auth+CSRF, not RequireRole(OWNER).
+func TestCreateStore_NewUserSessionCanCreateStore(t *testing.T) {
+	f := &fakeService{}
+	f.createStore = func(_ context.Context, ownerID string, in store.CreateStoreInput) (store.Store, error) {
+		if ownerID != "u-user" {
+			t.Errorf("ownerID = %q, want u-user", ownerID)
+		}
+		return store.Store{ID: "s1", Name: in.Name, Slug: "mi-comercio", Address: in.Address, Specialty: in.Specialty}, nil
+	}
+	// Resolve the session cookie to a USER actor with bound CSRF token.
+	f.authenticateSession = func(_ context.Context, raw string) (store.Actor, error) {
+		return store.Actor{ID: "u-user", Name: "Nuevo", Email: "nuevo@example.com", Role: store.RoleUser}, nil
+	}
+	f.sessionCSRF = func(_ context.Context, raw string) (string, error) { return "t1", nil }
+	h := newTestRouter(t, f)
+	body := `{"name":"Mi Comercio","address":"Av 2","specialty":"Barbería"}`
+	// Session-authenticated USER + valid double-submit CSRF header.
+	rr2 := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/stores", strings.NewReader(body))
+	req.AddCookie(&http.Cookie{Name: config.SessionCookie, Value: "raw-token"})
+	req.Header.Set("X-CSRF-Token", "t1")
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(rr2, req)
+	if rr2.Code != http.StatusCreated {
+		t.Fatalf("status %d, want 201 for USER creating first store", rr2.Code)
+	}
+	var got store.Store
+	if err := json.Unmarshal(rr2.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode store: %v", err)
+	}
+	if got.Slug != "mi-comercio" {
+		t.Errorf("slug = %q, want mi-comercio", got.Slug)
 	}
 }
 

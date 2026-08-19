@@ -127,3 +127,11 @@ func IsUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
+
+// PromoteToOwner idempotently sets the user's role to OWNER. A newly
+// registered user starts as USER; the first store they create promotes them to
+// OWNER so the owner dashboard and endpoints become available.
+func (db *DB) PromoteToOwner(ctx context.Context, userID string) error {
+	_, err := db.pool.Exec(ctx, `UPDATE users SET role = 'OWNER' WHERE id = $1`, userID)
+	return err
+}

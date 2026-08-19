@@ -57,6 +57,39 @@ func TestRegister_SuccessReturns201Profile(t *testing.T) {
 	}
 }
 
+func TestRegister_SuccessAutoLoginSetsSessionCookies(t *testing.T) {
+	f := &fakeService{}
+	f.register = func(_ context.Context, name, email, password string) (store.User, error) {
+		return store.User{ID: "u1", Name: name, Email: email, Role: store.RoleUser}, nil
+	}
+	f.issueSession = func(_ context.Context, userID string) (service.SessionResult, error) {
+		if userID != "u1" {
+			t.Errorf("userID = %q, want u1", userID)
+		}
+		return service.SessionResult{RawToken: "raw-token", CSRFToken: "csrf-token", ExpiresAt: time.Now().Add(time.Hour)}, nil
+	}
+	h := newTestRouter(t, f)
+	rr := doRequest(t, h, http.MethodPost, "/api/auth/register", `{"name":"Ana","email":"ana@example.com","password":"password123"}`)
+
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("status %d, want 201", rr.Code)
+	}
+	session := cookieByName(t, rr, config.SessionCookie)
+	if session.Value != "raw-token" {
+		t.Errorf("session cookie = %q, want raw-token", session.Value)
+	}
+	if !session.HttpOnly {
+		t.Error("session cookie must be HttpOnly")
+	}
+	csrf := cookieByName(t, rr, config.CsrfCookie)
+	if csrf.Value != "csrf-token" {
+		t.Errorf("csrf cookie = %q, want csrf-token", csrf.Value)
+	}
+	if csrf.HttpOnly {
+		t.Error("csrf cookie must be readable by JS (not HttpOnly)")
+	}
+}
+
 func TestRegister_ValidationError400(t *testing.T) {
 	f := &fakeService{}
 	f.register = func(_ context.Context, _, _, _ string) (store.User, error) {
