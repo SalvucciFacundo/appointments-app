@@ -70,21 +70,18 @@ export default function SlotCalendar({ slug, onSelectSlot }: SlotCalendarProps) 
                 type="button"
                 disabled={!slot.available}
                 onClick={() => slot.available && handleSelect(slot)}
-                className={`relative rounded-[var(--radius-md)] border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                className={`relative rounded-[var(--radius-lg)] border px-3 py-2.5 text-sm font-medium transition-all duration-150 cursor-pointer ${
                   isSelected
-                    ? "border-[var(--accent)] bg-gradient-to-r from-[var(--accent)] to-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-105"
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-white shadow-md shadow-cyan-500/25 scale-[1.02]"
                     : slot.available
-                      ? "border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:shadow-sm hover:-translate-y-0.5"
-                      : "cursor-not-allowed border-[var(--border-subtle)] bg-[var(--bg-muted)] text-[var(--text-quaternary)]"
+                      ? "border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[var(--accent-mid)] hover:text-[var(--accent)] hover:shadow-sm hover:-translate-y-0.5"
+                      : "cursor-not-allowed border-[var(--border-subtle)] bg-[var(--bg-muted)] text-[var(--text-quaternary)] opacity-50"
                 }`}
               >
                 {slot.start}
                 {/* Availability indicator */}
                 {slot.available && !isSelected && (
-                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[var(--success)] shadow-sm shadow-green-500/30" />
-                )}
-                {!slot.available && (
-                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[var(--danger)] opacity-50" />
+                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-[var(--accent-mid)] ring-2 ring-[var(--bg-surface)]" />
                 )}
               </button>
             )
@@ -122,19 +119,19 @@ export default function SlotCalendar({ slug, onSelectSlot }: SlotCalendarProps) 
             className="w-full rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] py-2.5 pl-10 pr-3 text-sm
               text-[var(--text-primary)]
               hover:border-[var(--border-strong)]
-              focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent
+              focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
               transition-all duration-150"
           />
         </div>
 
         {date && (
           <div className="flex items-center gap-3 text-sm">
-            <span className="font-medium text-[var(--text-primary)]">
+            <span className="font-semibold text-[var(--text-primary)]">
               {dayLabel} {formattedDate}
             </span>
-            <span className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
-              <span className="h-2 w-2 rounded-full bg-[var(--success)]" /> Disponible
-              <span className="ml-2 h-2 w-2 rounded-full bg-[var(--danger)] opacity-50" /> Ocupado
+            <span className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
+              <span className="h-2 w-2 rounded-full bg-[var(--accent-mid)]" /> Disponible
+              <span className="ml-2 h-2 w-2 rounded-full bg-[var(--border-strong)] opacity-50" /> Ocupado
             </span>
           </div>
         )}

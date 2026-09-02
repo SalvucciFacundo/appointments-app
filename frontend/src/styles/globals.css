@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
-   Appointments App — Design System v2
-   Portado de src/app/globals.css (Next.js → Vite)
+   Appointments App — Design System v3
+   Monochrome & Electric Cyan
    ═══════════════════════════════════════════════ */
 
 @import "tailwindcss";
@@ -9,44 +9,44 @@
 
 /* ─── Design Tokens (Light) ─────────────────── */
 :root {
-  --bg-page: #f5f5f0;
+  --bg-page: #fafafc;
   --bg-surface: #ffffff;
   --bg-elevated: #ffffff;
-  --bg-muted: #f0efec;
-  --bg-hover: #e8e7e4;
-  --bg-active: #dddcd8;
+  --bg-muted: #f4f4f6;
+  --bg-hover: #ebebef;
+  --bg-active: #e2e2e7;
 
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b6b6b;
-  --text-tertiary: #9e9e9e;
-  --text-quaternary: #c5c5c5;
+  --text-primary: #09090b;
+  --text-secondary: #52525b;
+  --text-tertiary: #71717a;
+  --text-quaternary: #a1a1aa;
   --text-inverse: #ffffff;
 
-  --accent: #0d9488;
-  --accent-hover: #0f766e;
-  --accent-active: #115e59;
-  --accent-light: #d5f5f0;
-  --accent-mid: #5eead4;
-  --accent-border: rgba(13, 148, 136, 0.2);
-  --accent-gradient: linear-gradient(135deg, #0d9488, #0891b2);
+  --accent: #0891b2;
+  --accent-hover: #0e7490;
+  --accent-active: #155e75;
+  --accent-light: #ecfeff;
+  --accent-mid: #06b6d4;
+  --accent-border: rgba(8, 145, 178, 0.22);
+  --accent-gradient: linear-gradient(135deg, #0891b2, #06b6d4);
 
-  --danger: #dc2626;
-  --danger-light: #fee2e2;
-  --success: #16a34a;
-  --success-light: #dcfce7;
-  --warning: #d97706;
-  --warning-light: #fef3c7;
-  --info: #2563eb;
-  --info-light: #dbeafe;
+  --danger: #ef4444;
+  --danger-light: #fef2f2;
+  --success: #10b981;
+  --success-light: #ecfdf5;
+  --warning: #f59e0b;
+  --warning-light: #fffbeb;
+  --info: #0284c7;
+  --info-light: #f0f9ff;
 
-  --border-subtle: #e5e4e0;
-  --border-default: #d4d3cf;
-  --border-strong: #a3a29e;
+  --border-subtle: #f4f4f6;
+  --border-default: #e4e4e7;
+  --border-strong: #d4d4d8;
 
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03);
-  --shadow-lg: 0 4px 16px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03);
-  --shadow-xl: 0 8px 32px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.03);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -58,51 +58,51 @@
 
 /* ─── Dark Mode ─────────────────────────────── */
 .dark {
-  --bg-page: #08080c;
-  --bg-surface: #111115;
-  --bg-elevated: #1a1a20;
+  --bg-page: #09090b;
+  --bg-surface: #121215;
+  --bg-elevated: #18181b;
   --bg-muted: #1e1e24;
-  --bg-hover: #26262e;
+  --bg-hover: #27272e;
   --bg-active: #32323a;
 
-  --text-primary: #f0f0f0;
-  --text-secondary: #94949e;
-  --text-tertiary: #6b6b76;
-  --text-quaternary: #3f3f48;
-  --text-inverse: #0a0a0a;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #71717a;
+  --text-quaternary: #52525b;
+  --text-inverse: #09090b;
 
-  --accent: #14b8a6;
-  --accent-hover: #2dd4bf;
-  --accent-active: #5eead4;
-  --accent-light: #0a2e2a;
-  --accent-mid: #0d9488;
-  --accent-border: rgba(20, 184, 166, 0.25);
-  --accent-gradient: linear-gradient(135deg, #14b8a6, #06b6d4);
+  --accent: #06b6d4;
+  --accent-hover: #22d3ee;
+  --accent-active: #67e8f9;
+  --accent-light: rgba(6, 182, 212, 0.12);
+  --accent-mid: #0891b2;
+  --accent-border: rgba(6, 182, 212, 0.3);
+  --accent-gradient: linear-gradient(135deg, #06b6d4, #38bdf8);
 
-  --danger: #ef4444;
-  --danger-light: #3b0a0a;
-  --success: #22c55e;
-  --success-light: #052e16;
-  --warning: #f59e0b;
-  --warning-light: #3b1a00;
-  --info: #3b82f6;
-  --info-light: #0a1a3b;
+  --danger: #f87171;
+  --danger-light: rgba(239, 68, 68, 0.15);
+  --success: #34d399;
+  --success-light: rgba(16, 185, 129, 0.15);
+  --warning: #fbbf24;
+  --warning-light: rgba(245, 158, 11, 0.15);
+  --info: #38bdf8;
+  --info-light: rgba(2, 132, 199, 0.15);
 
-  --border-subtle: #1e1e24;
-  --border-default: #2a2a32;
-  --border-strong: #3a3a44;
+  --border-subtle: #18181b;
+  --border-default: #27272a;
+  --border-strong: #3f3f46;
 
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03);
-  --shadow-lg: 0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
-  --shadow-xl: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
 }
 
 /* ─── Tailwind v4 Theme Inline ──────────────── */
 @theme inline {
   --color-background: var(--bg-page);
   --color-foreground: var(--text-primary);
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -110,22 +110,22 @@
 body {
   background: var(--bg-page);
   color: var(--text-primary);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* ─── Animations ────────────────────────────── */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
-.animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-.animate-slideUp { animation: slideUp 0.3s ease-out; }
-.animate-slideDown { animation: slideDown 0.3s ease-out; }
-.animate-scaleIn { animation: scaleIn 0.2s ease-out; }
+.animate-fadeIn { animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-slideUp { animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-slideDown { animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-scaleIn { animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
 
 /* ─── Utilities ─────────────────────────────── */
 .skeleton {
@@ -145,6 +145,19 @@ body {
   background: var(--accent-gradient);
 }
 
+/* ─── Interactive Utilities ─────────────────── */
+.card-hover {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent-border);
+}
+
 /* ─── Scrollbar ─────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -152,4 +165,4 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 
 /* ─── Selection ─────────────────────────────── */
-::selection { background: var(--accent-light); color: var(--text-primary); }
+::selection { background: var(--accent-light); color: var(--accent-active); }

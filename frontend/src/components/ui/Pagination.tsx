@@ -40,10 +40,10 @@ export default function Pagination({ page, totalPages, onPageChange }: Paginatio
                 )}
                 <button
                   onClick={() => onPageChange(p)}
-                  className={`flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-sm font-medium transition-all duration-150
+                  className={`flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-sm font-medium transition-all duration-150 cursor-pointer
                     ${p === page
-                      ? "bg-[var(--accent)] text-white shadow-sm"
-                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                      ? "bg-[var(--accent)] text-white shadow-sm shadow-cyan-500/25 ring-1 ring-cyan-500 font-semibold"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] border border-transparent hover:border-[var(--border-default)]"
                     }`}
                 >
                   {p}

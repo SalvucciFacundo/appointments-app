@@ -86,14 +86,15 @@ export default function SearchBar({ specialties, selectedSpecialty }: SearchBarP
             triggerSearch(e.target.value)
           }}
           placeholder='Buscar comercios... (presioná "/" para buscar)'
-          className="w-full rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] py-2.5 pl-10 pr-4 text-sm
+          className="w-full rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--bg-surface)] py-3 pl-11 pr-10 text-sm
             placeholder:text-[var(--text-quaternary)]
             hover:border-[var(--border-strong)]
-            focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent
+            focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
             text-[var(--text-primary)]
+            shadow-[var(--shadow-sm)]
             transition-all duration-150"
         />
-        {query && (
+        {query ? (
           <button
             onClick={() => {
               setQuery("")
@@ -103,21 +104,25 @@ export default function SearchBar({ specialties, selectedSpecialty }: SearchBarP
               navigate(`/?${params.toString()}`)
               inputRef.current?.focus()
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] p-1 rounded-full hover:bg-[var(--bg-hover)] transition-colors"
           >
             ✕
           </button>
+        ) : (
+          <kbd className="absolute right-3.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center rounded border border-[var(--border-default)] bg-[var(--bg-muted)] px-1.5 text-[10px] font-medium text-[var(--text-tertiary)]">
+            /
+          </kbd>
         )}
       </div>
 
       {/* Specialty filters */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-2 pt-1">
         <button
           onClick={() => { setShowFilters(!showFilters); handleSpecialtyChange("") }}
-          className={`inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] px-3 py-1.5 text-xs font-medium transition-all duration-150
+          className={`inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] px-3.5 py-1.5 text-xs font-medium transition-all duration-150 cursor-pointer
             ${!selectedSpecialty
-              ? "bg-gradient-to-r from-[var(--accent)] to-emerald-600 text-white shadow-sm"
-              : "bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+              ? "bg-[var(--accent)] text-white shadow-sm shadow-cyan-500/25 ring-1 ring-cyan-500"
+              : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:border-[var(--accent-border)] hover:text-[var(--accent)]"
             }`}
         >
           <svg className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -129,10 +134,10 @@ export default function SearchBar({ specialties, selectedSpecialty }: SearchBarP
           <button
             key={s}
             onClick={() => handleSpecialtyChange(selectedSpecialty === s ? "" : s)}
-            className={`rounded-[var(--radius-pill)] px-3 py-1.5 text-xs font-medium transition-all duration-150
+            className={`rounded-[var(--radius-pill)] px-3.5 py-1.5 text-xs font-medium transition-all duration-150 cursor-pointer
               ${selectedSpecialty === s
-                ? "bg-gradient-to-r from-[var(--accent)] to-emerald-600 text-white shadow-sm"
-                : "bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                ? "bg-[var(--accent)] text-white shadow-sm shadow-cyan-500/25 ring-1 ring-cyan-500"
+                : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:border-[var(--accent-border)] hover:text-[var(--accent)]"
               }`}
           >
             {s}
@@ -141,7 +146,7 @@ export default function SearchBar({ specialties, selectedSpecialty }: SearchBarP
         {specialties.length > 6 && (
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+            className="text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--accent)] transition-colors cursor-pointer ml-1"
           >
             {showFilters ? "Mostrar menos ↑" : `+${specialties.length - 6} más`}
           </button>

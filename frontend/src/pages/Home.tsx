@@ -132,36 +132,36 @@ export default function Home() {
 
       {/* Landing Hero Section */}
       {isFirstVisit && (
-        <div className="relative mb-10 overflow-hidden rounded-[var(--radius-2xl)] bg-gradient-to-br from-[var(--bg-surface)] via-[var(--bg-surface)] to-[var(--accent-light)] border border-[var(--border-subtle)] p-8 sm:p-10">
-          {/* Decorative gradient blob */}
-          <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-gradient-to-br from-[var(--accent)]/10 to-emerald-500/5 blur-3xl" />
-          <div className="absolute -bottom-10 -left-10 h-48 w-48 rounded-full bg-gradient-to-tr from-cyan-500/5 to-[var(--accent)]/10 blur-3xl" />
+        <div className="relative mb-10 overflow-hidden rounded-[var(--radius-2xl)] bg-[var(--bg-surface)] border border-[var(--border-default)] p-8 sm:p-10 shadow-[var(--shadow-sm)]">
+          {/* Subtle decorative glow */}
+          <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl dark:bg-cyan-500/15" />
+          <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-cyan-600/5 blur-3xl dark:bg-cyan-600/10" />
 
-          <div className="relative">
+          <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[var(--accent)] to-emerald-600 px-3 py-1 text-xs font-medium text-white shadow-sm">
-                <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-light)] border border-[var(--accent-border)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
+                <svg className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
                   <line x1="16" x2="16" y1="2" y2="6" />
                   <line x1="8" x2="8" y1="2" y2="6" />
                   <line x1="3" x2="21" y1="10" y2="10" />
                 </svg>
-                Gestión de Turnos
+                Plataforma de Turnos
               </span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text-primary)]">
-              Reservá tu turno en segundos
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[var(--text-primary)]">
+              Reservá tu turno <span className="text-[var(--accent)]">al instante</span>
             </h1>
-            <p className="mt-3 max-w-lg text-[var(--text-secondary)] leading-relaxed">
-              Encontrá el comercio que necesitás y reservá al instante. Sin llamadas, sin esperas.
+            <p className="mt-3 max-w-xl text-[var(--text-secondary)] text-sm sm:text-base leading-relaxed">
+              Encontrá barberías, centros de estética, salud y más. Elegí tu profesional y confirmá tu horario en segundos, sin fricción.
             </p>
 
-            {/* Stats */}
-            <div className="mt-6 flex flex-wrap gap-6">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--accent-light)]">
-                  <svg className="h-4 w-4 text-[var(--accent)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {/* Stats / Highlights */}
+            <div className="mt-8 flex flex-wrap gap-4 sm:gap-8 pt-6 border-t border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                  <svg className="h-5 w-5 text-[var(--accent)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
                     <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -169,13 +169,13 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">+1,000</p>
+                  <p className="text-base font-bold text-[var(--text-primary)]">+1,000</p>
                   <p className="text-xs text-[var(--text-tertiary)]">Usuarios activos</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-emerald-500/10">
-                  <svg className="h-4 w-4 text-emerald-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                  <svg className="h-5 w-5 text-[var(--accent)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
                     <line x1="16" x2="16" y1="2" y2="6" />
                     <line x1="8" x2="8" y1="2" y2="6" />
@@ -183,8 +183,8 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">+500</p>
-                  <p className="text-xs text-[var(--text-tertiary)]">Turnos por día</p>
+                  <p className="text-base font-bold text-[var(--text-primary)]">Disponibilidad 24/7</p>
+                  <p className="text-xs text-[var(--text-tertiary)]">Turnos online sin esperas</p>
                 </div>
               </div>
             </div>

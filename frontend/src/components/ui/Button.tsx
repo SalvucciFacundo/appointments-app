@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react"
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "danger" | "ghost" | "outline"
+  variant?: "primary" | "secondary" | "accent" | "danger" | "ghost" | "outline"
   size?: "sm" | "md" | "lg"
   loading?: boolean
   children: ReactNode
@@ -9,15 +9,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<string, string> = {
   primary:
-    "bg-gradient-to-r from-[var(--accent)] to-emerald-600 text-white shadow-sm shadow-emerald-500/10 hover:shadow-md hover:shadow-emerald-500/20 active:opacity-90 disabled:opacity-50",
+    "bg-zinc-950 text-zinc-50 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white shadow-sm hover:shadow active:scale-[0.98] border border-zinc-800 dark:border-transparent",
+  accent:
+    "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] shadow-sm shadow-cyan-500/20 hover:shadow-md hover:shadow-cyan-500/30 active:scale-[0.98]",
   secondary:
-    "bg-[var(--bg-muted)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-active)] disabled:opacity-50",
+    "bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-hover)] hover:border-[var(--border-strong)] active:scale-[0.98]",
   danger:
-    "bg-[var(--danger)] text-white hover:opacity-90 active:opacity-80 disabled:opacity-50",
+    "bg-[var(--danger)] text-white hover:opacity-95 shadow-sm active:scale-[0.98]",
   ghost:
-    "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:bg-[var(--bg-active)] disabled:opacity-50",
+    "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.98]",
   outline:
-    "bg-transparent text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-hover)] hover:border-[var(--border-strong)] active:bg-[var(--bg-active)] disabled:opacity-50",
+    "bg-transparent text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-hover)] hover:border-[var(--accent-border)] hover:text-[var(--accent)] active:scale-[0.98]",
 }
 
 const sizeClasses: Record<string, string> = {
@@ -40,7 +42,7 @@ export default function Button({
       className={`inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium
         transition-all duration-150 cursor-pointer
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]
-        disabled:cursor-not-allowed
+        disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none
         ${variantClasses[variant] ?? variantClasses.primary}
         ${sizeClasses[size] ?? sizeClasses.md}
         ${className}`}

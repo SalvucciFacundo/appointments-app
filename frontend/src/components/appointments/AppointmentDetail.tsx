@@ -22,10 +22,10 @@ function formatDateTime(iso: string): string {
 }
 
 const STATUS_CLASSES: Record<string, string> = {
-  PENDING: "text-yellow-600 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-900/20",
-  CONFIRMED: "text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/20",
-  COMPLETED: "text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20",
-  CANCELLED: "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/20",
+  PENDING: "text-[var(--warning)] bg-[var(--warning-light)] border border-[var(--warning)]/25",
+  CONFIRMED: "text-[var(--accent)] bg-[var(--accent-light)] border border-[var(--accent-border)]",
+  COMPLETED: "text-[var(--success)] bg-[var(--success-light)] border border-[var(--success)]/25",
+  CANCELLED: "text-[var(--danger)] bg-[var(--danger-light)] border border-[var(--danger)]/25",
 }
 
 const DAY_NAMES = [

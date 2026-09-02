@@ -352,7 +352,7 @@ export default function Dashboard() {
                     bg-[var(--bg-surface)] text-[var(--text-primary)]
                     placeholder:text-[var(--text-quaternary)]
                     hover:border-[var(--border-strong)]
-                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
                     transition-all duration-150"
                 />
               </div>
@@ -388,7 +388,7 @@ export default function Dashboard() {
                     className="rounded-[var(--radius-md)] border border-[var(--border-default)] px-2 py-1.5 text-sm
                       bg-[var(--bg-surface)] text-[var(--text-primary)]
                       hover:border-[var(--border-strong)]
-                      focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                      focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
                       transition-all duration-150"
                   />
                   <span className="text-xs text-[var(--text-tertiary)]">a</span>
@@ -403,7 +403,7 @@ export default function Dashboard() {
                     className="rounded-[var(--radius-md)] border border-[var(--border-default)] px-2 py-1.5 text-sm
                       bg-[var(--bg-surface)] text-[var(--text-primary)]
                       hover:border-[var(--border-strong)]
-                      focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                      focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
                       transition-all duration-150"
                   />
                 </div>
@@ -426,7 +426,7 @@ export default function Dashboard() {
                   className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
                     bg-[var(--bg-surface)] text-[var(--text-primary)]
                     hover:border-[var(--border-strong)]
-                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
                     transition-all duration-150" />
               </div>
               <div>
@@ -438,7 +438,7 @@ export default function Dashboard() {
                   className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
                     bg-[var(--bg-surface)] text-[var(--text-primary)]
                     hover:border-[var(--border-strong)]
-                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
                     transition-all duration-150" />
               </div>
               <div>
@@ -450,7 +450,7 @@ export default function Dashboard() {
                   className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
                     bg-[var(--bg-surface)] text-[var(--text-primary)]
                     hover:border-[var(--border-strong)]
-                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
                     transition-all duration-150" />
               </div>
               <div>
@@ -462,7 +462,7 @@ export default function Dashboard() {
                   className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
                     bg-[var(--bg-surface)] text-[var(--text-primary)]
                     hover:border-[var(--border-strong)]
-                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
                     transition-all duration-150" />
               </div>
             </div>
@@ -481,7 +481,7 @@ export default function Dashboard() {
                   className="rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm
                     bg-[var(--bg-surface)] text-[var(--text-primary)]
                     hover:border-[var(--border-strong)]
-                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
                     transition-all duration-150" />
               </div>
               <div>
@@ -492,7 +492,7 @@ export default function Dashboard() {
                     bg-[var(--bg-surface)] text-[var(--text-primary)]
                     placeholder:text-[var(--text-quaternary)]
                     hover:border-[var(--border-strong)]
-                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
                     transition-all duration-150" />
               </div>
               <div className="flex items-end">

@@ -24,10 +24,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           className={`w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm
             transition-all duration-150
             placeholder:text-[var(--text-quaternary)]
-            focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-1 focus:ring-offset-[var(--bg-page)]
+            focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]
             disabled:cursor-not-allowed disabled:opacity-50
             ${error
-              ? "border-[var(--danger)] focus:ring-[var(--danger)]"
+              ? "border-[var(--danger)] focus:ring-[var(--danger)]/30 focus:border-[var(--danger)]"
               : "border-[var(--border-default)] hover:border-[var(--border-strong)]"
             }
             bg-[var(--bg-surface)] text-[var(--text-primary)]

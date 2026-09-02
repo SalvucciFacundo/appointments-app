@@ -11,10 +11,10 @@ interface DayCalendarProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-yellow-200 border-yellow-400 text-yellow-900 dark:bg-yellow-900/30 dark:border-yellow-600 dark:text-yellow-200",
-  CONFIRMED: "bg-green-200 border-green-400 text-green-900 dark:bg-green-900/30 dark:border-green-600 dark:text-green-200",
-  COMPLETED: "bg-gray-200 border-gray-400 text-gray-900 dark:bg-gray-900/30 dark:border-gray-600 dark:text-gray-200",
-  CANCELLED: "bg-red-200 border-red-400 text-red-900 dark:bg-red-900/30 dark:border-red-600 dark:text-red-200",
+  PENDING: "bg-[var(--warning-light)] border-[var(--warning)]/30 text-[var(--warning)]",
+  CONFIRMED: "bg-[var(--accent-light)] border-[var(--accent-border)] text-[var(--accent)]",
+  COMPLETED: "bg-[var(--success-light)] border-[var(--success)]/30 text-[var(--success)]",
+  CANCELLED: "bg-[var(--danger-light)] border-[var(--danger)]/30 text-[var(--danger)]",
 }
 
 function todayStr(): string {
